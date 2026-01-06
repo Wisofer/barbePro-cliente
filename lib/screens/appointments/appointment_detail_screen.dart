@@ -1,0 +1,941 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../models/appointment.dart';
+import '../../services/api/appointment_service.dart';
+import '../../services/api/service_service.dart';
+
+class AppointmentDetailScreen extends ConsumerStatefulWidget {
+  final AppointmentDto appointment;
+
+  const AppointmentDetailScreen({
+    super.key,
+    required this.appointment,
+  });
+
+  @override
+  ConsumerState<AppointmentDetailScreen> createState() => _AppointmentDetailScreenState();
+}
+
+class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScreen> {
+  late AppointmentDto _appointment;
+  bool _isLoading = false;
+  bool _isDeleting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _appointment = widget.appointment;
+  }
+
+  Future<void> _updateStatus(String newStatus) async {
+    // Si se completa una cita sin servicios, mostrar modal para agregar servicios
+    if (newStatus == 'Completed' && _appointment.services.isEmpty) {
+      final serviceIds = await _showServiceSelectionDialog();
+      if (serviceIds == null) {
+        // Usuario canceló, no hacer nada
+        return;
+      }
+      // Continuar con la actualización incluyendo los servicios
+      await _updateStatusWithServices(newStatus, serviceIds);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final service = ref.read(appointmentServiceProvider);
+      final updated = await service.updateAppointment(
+        id: _appointment.id,
+        status: newStatus,
+      );
+
+      if (mounted) {
+        setState(() {
+          _appointment = updated;
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Estado actualizado exitosamente'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        
+        // Si se confirmó la cita, ofrecer enviar WhatsApp
+        if (newStatus == 'Confirmed') {
+          await _showWhatsAppDialog();
+        }
+        
+        // Notificar que hubo cambios para refrescar otras pantallas
+        Navigator.pop(context, true);
+      }
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? 'Error al actualizar el estado';
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateStatusWithServices(String newStatus, List<int> serviceIds) async {
+    setState(() => _isLoading = true);
+
+    try {
+      final service = ref.read(appointmentServiceProvider);
+      final updated = await service.updateAppointment(
+        id: _appointment.id,
+        status: newStatus,
+        serviceIds: serviceIds.isEmpty ? null : serviceIds,
+      );
+
+      if (mounted) {
+        setState(() {
+          _appointment = updated;
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cita completada exitosamente'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        
+        // Notificar que hubo cambios para refrescar otras pantallas
+        Navigator.pop(context, true);
+      }
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? 'Error al actualizar el estado';
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<List<int>?> _showServiceSelectionDialog() async {
+    try {
+      final serviceService = ref.read(serviceServiceProvider);
+      final services = await serviceService.getServices();
+      final activeServices = services.where((s) => s.isActive).toList();
+
+      if (activeServices.isEmpty) {
+        // Si no hay servicios, permitir completar sin servicios
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              'Completar sin servicios',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+            content: Text(
+              'No hay servicios disponibles. ¿Deseas completar la cita sin servicios?',
+              style: GoogleFonts.inter(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancelar', style: GoogleFonts.inter()),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Completar',
+                  style: GoogleFonts.inter(color: const Color(0xFF10B981)),
+                ),
+              ),
+            ],
+          ),
+        );
+        return result == true ? [] : null;
+      }
+
+      final selectedServiceIds = <int>[];
+
+      return await showDialog<List<int>>(
+        context: context,
+        builder: (context) {
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
+          final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
+          final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
+          final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
+          final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFD1D5DB);
+          const accentColor = Color(0xFF10B981);
+
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: Text(
+                  '¿Agregar servicios?',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Selecciona los servicios realizados (opcional)',
+                        style: GoogleFonts.inter(fontSize: 13, color: mutedColor),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        constraints: const BoxConstraints(maxHeight: 300),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: activeServices.length,
+                          itemBuilder: (context, index) {
+                            final service = activeServices[index];
+                            final isSelected = selectedServiceIds.contains(service.id);
+                            return InkWell(
+                              onTap: () {
+                                setDialogState(() {
+                                  if (isSelected) {
+                                    selectedServiceIds.remove(service.id);
+                                  } else {
+                                    selectedServiceIds.add(service.id);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? accentColor.withAlpha(20) : Colors.transparent,
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: borderColor,
+                                      width: index < activeServices.length - 1 ? 1 : 0,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? accentColor : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isSelected ? accentColor : borderColor,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: isSelected
+                                          ? Icon(Icons.check, color: Colors.white, size: 16)
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            service.name,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'C\$${service.price.toStringAsFixed(2)} • ${service.formattedDuration}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: mutedColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, null),
+                    child: Text('Cancelar', style: GoogleFonts.inter()),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, []),
+                    child: Text(
+                      'Completar sin servicios',
+                      style: GoogleFonts.inter(color: mutedColor),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, selectedServiceIds),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      'Completar',
+                      style: GoogleFonts.inter(),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      // Si hay error cargando servicios, permitir completar sin servicios
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
+            'Completar sin servicios',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'No se pudieron cargar los servicios. ¿Deseas completar la cita sin servicios?',
+            style: GoogleFonts.inter(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancelar', style: GoogleFonts.inter()),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Completar',
+                style: GoogleFonts.inter(color: const Color(0xFF10B981)),
+              ),
+            ),
+          ],
+        ),
+      );
+      return result == true ? [] : null;
+    }
+  }
+
+  Future<void> _showWhatsAppDialog() async {
+    final sendWhatsApp = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Iconsax.message, color: const Color(0xFF10B981), size: 24),
+            const SizedBox(width: 12),
+            const Text(
+              'Enviar confirmación',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        content: const Text(
+          '¿Deseas enviar un mensaje de confirmación al cliente por WhatsApp?',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+
+    if (sendWhatsApp == true) {
+      await _sendWhatsAppMessage();
+    }
+  }
+
+  Future<void> _sendWhatsAppMessage() async {
+    try {
+      final service = ref.read(appointmentServiceProvider);
+      final whatsappData = await service.getWhatsAppUrl(_appointment.id);
+      
+      final url = whatsappData['url'] as String;
+      
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo abrir WhatsApp'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ [AppointmentDetail] Error al obtener URL de WhatsApp: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al obtener URL de WhatsApp: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAppointment() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: const Text('¿Estás seguro de que deseas eliminar esta cita?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFEF4444),
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isDeleting = true);
+
+    try {
+      final service = ref.read(appointmentServiceProvider);
+      await service.deleteAppointment(_appointment.id);
+
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cita eliminada exitosamente'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? 'Error al eliminar la cita';
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Confirmed':
+        return const Color(0xFF10B981);
+      case 'Pending':
+        return const Color(0xFFF59E0B);
+      case 'Cancelled':
+        return const Color(0xFFEF4444);
+      case 'Completed':
+        return const Color(0xFF6366F1);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'Confirmed':
+        return 'Confirmada';
+      case 'Pending':
+        return 'Pendiente';
+      case 'Cancelled':
+        return 'Cancelada';
+      case 'Completed':
+        return 'Completada';
+      default:
+        return status;
+    }
+  }
+
+  double _getTotalPrice() {
+    if (_appointment.services.isNotEmpty) {
+      return _appointment.services.fold<double>(0.0, (sum, service) => sum + service.price);
+    }
+    return _appointment.servicePrice ?? 0.0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
+    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
+    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF0FDF4);
+    const accentColor = Color(0xFF10B981);
+    final statusColor = _getStatusColor(_appointment.status);
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        title: Text(
+          'Detalles de la Cita',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: cardColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textColor),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
+        actions: [
+          if (_isDeleting)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              onPressed: _deleteAppointment,
+              icon: const Icon(Iconsax.trash),
+              color: const Color(0xFFEF4444),
+            ),
+        ],
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: accentColor))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Status Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: statusColor.withAlpha(25),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Iconsax.tick_circle,
+                            color: statusColor,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Estado',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: mutedColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _getStatusText(_appointment.status),
+                                style: GoogleFonts.inter(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: statusColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Client Info
+                  _InfoCard(
+                    icon: Iconsax.user,
+                    title: 'Cliente',
+                    subtitle: _appointment.clientName,
+                    trailing: _appointment.clientPhone,
+                    textColor: textColor,
+                    mutedColor: mutedColor,
+                    cardColor: cardColor,
+                    borderColor: borderColor,
+                    accentColor: accentColor,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Services Info
+                  if (_appointment.services.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(Iconsax.scissor, color: accentColor, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Servicios',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: mutedColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: _appointment.services.map((service) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: accentColor.withAlpha(15),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: accentColor.withAlpha(30),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                service.name,
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: textColor,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'C\$${service.price.toStringAsFixed(2)}',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  color: accentColor,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'Total:',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: mutedColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'C\$${_getTotalPrice().toStringAsFixed(2)}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    _InfoCard(
+                      icon: Iconsax.scissor,
+                      title: 'Servicio',
+                      subtitle: (_appointment.serviceName?.isEmpty ?? true) ? 'Sin servicio asignado' : (_appointment.serviceName ?? 'Sin servicio asignado'),
+                      trailing: (_appointment.servicePrice ?? 0) > 0 
+                          ? 'C\$${_appointment.servicePrice!.toStringAsFixed(2)}'
+                          : '-',
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                  const SizedBox(height: 12),
+
+                  // Date & Time
+                  _InfoCard(
+                    icon: Iconsax.calendar,
+                    title: 'Fecha y Hora',
+                    subtitle: _appointment.date,
+                    trailing: _appointment.time,
+                    textColor: textColor,
+                    mutedColor: mutedColor,
+                    cardColor: cardColor,
+                    borderColor: borderColor,
+                    accentColor: accentColor,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Status Actions
+                  if (_appointment.status == 'Pending') ...[
+                    Text(
+                      'Acciones',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _updateStatus('Confirmed'),
+                        icon: const Icon(Iconsax.tick_circle),
+                        label: const Text('Confirmar Cita'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _updateStatus('Cancelled'),
+                        icon: const Icon(Iconsax.close_circle),
+                        label: const Text('Cancelar Cita'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFEF4444),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Color(0xFFEF4444)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ] else if (_appointment.status == 'Confirmed') ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _updateStatus('Completed'),
+                        icon: const Icon(Iconsax.tick_square),
+                        label: const Text('Marcar como Completada'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String trailing;
+  final Color textColor;
+  final Color mutedColor;
+  final Color cardColor;
+  final Color borderColor;
+  final Color accentColor;
+
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.trailing,
+    required this.textColor,
+    required this.mutedColor,
+    required this.cardColor,
+    required this.borderColor,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: accentColor.withAlpha(20),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: accentColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: mutedColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            trailing,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: accentColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
