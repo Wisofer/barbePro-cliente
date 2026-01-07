@@ -37,9 +37,6 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
       _errorMessage = null;
     });
     try {
-      print('🔵 [Income] Cargando ingresos...');
-      
-      // Usar el servicio correcto según el rol
       TransactionsResponse data;
       if (RoleHelper.isEmployee(ref)) {
         final service = ref.read(employeeFinanceServiceProvider);
@@ -54,8 +51,6 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
           endDate: _endDate,
         );
       }
-      
-      print('✅ [Income] Ingresos cargados: ${data.items.length}');
       if (mounted) {
         setState(() {
           _incomeData = data;
@@ -85,9 +80,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
           _errorMessage = statusCode != null ? 'Error $statusCode: $message' : message;
         });
       }
-    } catch (e, stackTrace) {
-      print('❌ [Income] Error al cargar: $e');
-      print('📋 [Income] StackTrace: $stackTrace');
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -118,8 +111,8 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     );
     if (picked != null) {
       setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
+        _startDate = DateTime(picked.start.year, picked.start.month, picked.start.day, 0, 0, 0);
+        _endDate = DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59);
       });
       _loadIncome();
     }

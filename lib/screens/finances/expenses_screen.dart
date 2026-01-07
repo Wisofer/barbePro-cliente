@@ -36,9 +36,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       _errorMessage = null;
     });
     try {
-      print('🔵 [Expenses] Cargando egresos...');
-      
-      // Usar el servicio correcto según el rol
       TransactionsResponse data;
       if (RoleHelper.isEmployee(ref)) {
         final service = ref.read(employeeFinanceServiceProvider);
@@ -53,8 +50,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           endDate: _endDate,
         );
       }
-      
-      print('✅ [Expenses] Egresos cargados: ${data.items.length}');
       if (mounted) {
         setState(() {
           _expensesData = data;
@@ -84,9 +79,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           _errorMessage = statusCode != null ? 'Error $statusCode: $message' : message;
         });
       }
-    } catch (e, stackTrace) {
-      print('❌ [Expenses] Error al cargar: $e');
-      print('📋 [Expenses] StackTrace: $stackTrace');
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -117,8 +110,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     );
     if (picked != null) {
       setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
+        _startDate = DateTime(picked.start.year, picked.start.month, picked.start.day, 0, 0, 0);
+        _endDate = DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59);
       });
       _loadExpenses();
     }

@@ -21,6 +21,7 @@ import '../../utils/role_helper.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_option.dart';
 import 'widgets/profile_error_state.dart';
+import '../reports/employee_reports_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -158,7 +159,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return Center(child: CircularProgressIndicator(color: accentColor));
     }
 
-    // Si es Employee, mostrar perfil simplificado
+    // Si es Employee, mostrar perfil con mismo diseño que barbero
     if (RoleHelper.isEmployee(ref)) {
       final authState = ref.read(authNotifierProvider);
       final userProfile = authState.userProfile;
@@ -170,43 +171,92 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              // Header simplificado para trabajador
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              // Header igual al del barbero
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  border: Border(
+                    bottom: BorderSide(color: borderColor, width: 1),
+                  ),
+                ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Avatar circular igual al del barbero
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: [accentColor, accentColor.withOpacity(0.7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            accentColor,
+                            const Color(0xFF059669),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accentColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Icon(Iconsax.user, color: Colors.white, size: 28),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logobarbe.png',
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Iconsax.scissor5,
+                              color: Colors.white,
+                              size: 32,
+                            );
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 16),
+                    // Información
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             userProfile?.nombreCompleto ?? 'Trabajador',
                             style: GoogleFonts.inter(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: textColor,
+                              height: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            userProfile?.email ?? '',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: mutedColor,
+                          if (userProfile?.email != null && (userProfile?.email?.isNotEmpty ?? false)) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(Iconsax.sms, size: 14, color: mutedColor),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    userProfile?.email ?? '',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: mutedColor,
+                                      height: 1.3,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -518,6 +568,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const QuickStatsScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Reportes de Empleados (solo para Barber)
+                  if (RoleHelper.isBarber(ref)) ...[
+                    ProfileOption(
+                      icon: Iconsax.chart_21,
+                      title: 'Reportes de Empleados',
+                      subtitle: 'Análisis de rendimiento y actividad',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EmployeeReportsScreen(),
                           ),
                         );
                       },

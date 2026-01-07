@@ -6,9 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/appointment.dart';
+import '../../models/service.dart';
 import '../../services/api/appointment_service.dart';
+import '../../services/api/employee_appointment_service.dart';
 import '../../services/api/service_service.dart';
+import '../../services/api/employee_service_service.dart';
 import '../../utils/role_helper.dart';
+import '../../utils/jwt_decoder.dart';
+import '../../providers/auth_provider.dart';
 
 class AppointmentDetailScreen extends ConsumerStatefulWidget {
   final AppointmentDto appointment;
@@ -52,8 +57,11 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
       // Usar el servicio correcto según el rol
       AppointmentDto updated;
       if (RoleHelper.isEmployee(ref)) {
-        // Los trabajadores no pueden actualizar citas, solo el dueño
-        throw Exception('Los trabajadores no pueden actualizar el estado de las citas');
+        final service = ref.read(employeeAppointmentServiceProvider);
+        updated = await service.updateAppointment(
+          id: _appointment.id,
+          status: newStatus,
+        );
       } else {
         final service = ref.read(appointmentServiceProvider);
         updated = await service.updateAppointment(
@@ -75,8 +83,8 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
           ),
         );
         
-        // Si se confirmó la cita, ofrecer enviar WhatsApp
-        if (newStatus == 'Confirmed') {
+        // Si se confirmó la cita, ofrecer enviar WhatsApp (solo para Barber)
+        if (newStatus == 'Confirmed' && RoleHelper.isBarber(ref)) {
           await _showWhatsAppDialog();
         }
         
@@ -111,17 +119,22 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
     setState(() => _isLoading = true);
 
     try {
-      // Solo Barber puede actualizar citas con servicios
+      AppointmentDto updated;
       if (RoleHelper.isEmployee(ref)) {
-        throw Exception('Los trabajadores no pueden actualizar citas con servicios');
+        final service = ref.read(employeeAppointmentServiceProvider);
+        updated = await service.updateAppointment(
+          id: _appointment.id,
+          status: newStatus,
+          serviceIds: serviceIds.isEmpty ? null : serviceIds,
+        );
+      } else {
+        final service = ref.read(appointmentServiceProvider);
+        updated = await service.updateAppointment(
+          id: _appointment.id,
+          status: newStatus,
+          serviceIds: serviceIds.isEmpty ? null : serviceIds,
+        );
       }
-
-      final service = ref.read(appointmentServiceProvider);
-      final updated = await service.updateAppointment(
-        id: _appointment.id,
-        status: newStatus,
-        serviceIds: serviceIds.isEmpty ? null : serviceIds,
-      );
 
       if (mounted) {
         setState(() {
@@ -165,40 +178,17 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
 
   Future<List<int>?> _showServiceSelectionDialog() async {
     try {
-      // Solo Barber puede ver servicios
+      List<ServiceDto> services;
+      
+      // Los empleados usan el endpoint /employee/services (solo lectura)
+      // Los barberos usan el endpoint /barber/services (con permisos completos)
       if (RoleHelper.isEmployee(ref)) {
-        // Trabajadores no pueden seleccionar servicios
-        final result = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(
-              'Servicios no disponibles',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-            ),
-            content: Text(
-              'Los trabajadores no pueden gestionar servicios. ¿Deseas completar la cita sin servicios?',
-              style: GoogleFonts.inter(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text('Cancelar', style: GoogleFonts.inter()),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(
-                  'Completar sin servicios',
-                  style: GoogleFonts.inter(color: const Color(0xFF10B981)),
-                ),
-              ),
-            ],
-          ),
-        );
-        return result == true ? [] : null;
+        final employeeServiceService = ref.read(employeeServiceServiceProvider);
+        services = await employeeServiceService.getServices();
+      } else {
+        final serviceService = ref.read(serviceServiceProvider);
+        services = await serviceService.getServices();
       }
-
-      final serviceService = ref.read(serviceServiceProvider);
-      final services = await serviceService.getServices();
       final activeServices = services.where((s) => s.isActive).toList();
 
       if (activeServices.isEmpty) {
@@ -848,68 +838,122 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                   ),
                   const SizedBox(height: 32),
 
-                  // Status Actions (solo para Barber)
-                  if (RoleHelper.isBarber(ref) && _appointment.status == 'Pending') ...[
-                    Text(
-                      'Acciones',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _updateStatus('Confirmed'),
-                        icon: const Icon(Iconsax.tick_circle),
-                        label: const Text('Confirmar Cita'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                  // Status Actions
+                  Builder(
+                    builder: (context) {
+                      final isBarber = RoleHelper.isBarber(ref);
+                      final isEmployee = RoleHelper.isEmployee(ref);
+                      final authState = ref.read(authNotifierProvider);
+                      final currentEmployeeId = isEmployee 
+                          ? (int.tryParse(JwtDecoder.getUserId(authState.userToken) ?? '') ?? 
+                              int.tryParse(authState.userProfile?.userId ?? ''))
+                          : null;
+                      
+                      // Para empleados: mostrar acciones si la cita está pendiente (sin asignar) o asignada a ellos
+                      // Para barberos: mostrar acciones siempre
+                      final canShowActions = isBarber || 
+                          (isEmployee && (_appointment.employeeId == null || 
+                           _appointment.isAssignedTo(currentEmployeeId)));
+                      
+                      if (!canShowActions) {
+                        return const SizedBox.shrink();
+                      }
+                      
+                      // Botones para citas pendientes
+                      if (_appointment.status == 'Pending') {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Acciones',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Botón "Aceptar" para empleados (citas sin asignar)
+                            if (isEmployee && _appointment.employeeId == null)
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _updateStatus('Confirmed'),
+                                  icon: const Icon(Iconsax.tick_circle),
+                                  label: const Text('Aceptar Cita'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: accentColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Botones para Barber
+                            if (isBarber) ...[
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _updateStatus('Confirmed'),
+                                  icon: const Icon(Iconsax.tick_circle),
+                                  label: const Text('Confirmar Cita'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: accentColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _updateStatus('Cancelled'),
+                                  icon: const Icon(Iconsax.close_circle),
+                                  label: const Text('Cancelar Cita'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFFEF4444),
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    side: const BorderSide(color: Color(0xFFEF4444)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      }
+                      
+                      // Botón para completar citas confirmadas
+                      if (_appointment.status == 'Confirmed') {
+                        return SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _updateStatus('Completed'),
+                            icon: const Icon(Iconsax.tick_square),
+                            label: const Text('Marcar como Completada'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _updateStatus('Cancelled'),
-                        icon: const Icon(Iconsax.close_circle),
-                        label: const Text('Cancelar Cita'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFEF4444),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: const BorderSide(color: Color(0xFFEF4444)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ] else if (RoleHelper.isBarber(ref) && _appointment.status == 'Confirmed') ...[
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _updateStatus('Completed'),
-                        icon: const Icon(Iconsax.tick_square),
-                        label: const Text('Marcar como Completada'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                        );
+                      }
+                      
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ],
               ),
             ),

@@ -26,14 +26,15 @@ class AppNavbar extends ConsumerWidget {
     final isEmployee = RoleHelper.isEmployee(ref);
     
     if (isEmployee) {
-      // Trabajadores solo ven: Citas, Finanzas, Perfil
+      // Trabajadores ven: Citas, Servicios (solo lectura), Finanzas, Perfil
       return _allItems.where((item) => 
         item.id == 'appointments' || 
+        item.id == 'services' ||
         item.id == 'finances' || 
         item.id == 'profile'
       ).toList();
     } else {
-      // Barberos ven todas las opciones
+      // Barberos ven todas las opciones: Inicio, Citas, Servicios, Finanzas, Perfil
       return _allItems;
     }
   }

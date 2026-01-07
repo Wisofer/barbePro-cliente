@@ -169,14 +169,6 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // Header compacto
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                child: _buildHeader(textColor, mutedColor),
-              ),
-            ),
-
             // Stats rápidas horizontales
             SliverToBoxAdapter(
               child: Padding(
@@ -216,43 +208,6 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildHeader(Color textColor, Color mutedColor) {
-    final hour = DateTime.now().hour;
-    String greeting;
-    if (hour < 12) {
-      greeting = 'Buenos días';
-    } else if (hour < 18) {
-      greeting = 'Buenas tardes';
-    } else {
-      greeting = 'Buenas noches';
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          greeting,
-          style: GoogleFonts.inter(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: textColor,
-            letterSpacing: -0.5,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          _dashboard?.barber.name ?? 'Barbero',
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            color: mutedColor,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildQuickStats(
     Color textColor,
     Color mutedColor,
@@ -261,34 +216,16 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     Color accentColor,
   ) {
     final today = _dashboard!.today;
-    return Row(
-      children: [
-        Expanded(
-          child: _QuickStatCard(
-            icon: Iconsax.calendar_2,
-            value: today.appointments.toString(),
-            label: 'Citas hoy',
-            color: accentColor,
-            textColor: textColor,
-            mutedColor: mutedColor,
-            cardColor: cardColor,
-            borderColor: borderColor,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _QuickStatCard(
-            icon: Iconsax.wallet_3,
-            value: MoneyFormatter.formatCordobas(today.income),
-            label: 'Ingresos',
-            color: const Color(0xFF22C55E),
-            textColor: textColor,
-            mutedColor: mutedColor,
-            cardColor: cardColor,
-            borderColor: borderColor,
-          ),
-        ),
-      ],
+    // Solo mostrar Citas de hoy
+    return _QuickStatCard(
+      icon: Iconsax.calendar_2,
+      value: today.appointments.toString(),
+      label: 'Citas hoy',
+      color: accentColor,
+      textColor: textColor,
+      mutedColor: mutedColor,
+      cardColor: cardColor,
+      borderColor: borderColor,
     );
   }
 
@@ -299,28 +236,71 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     Color borderColor,
     Color accentColor,
   ) {
-    return Row(
+    final today = _dashboard!.today;
+    final month = _dashboard!.thisMonth;
+    
+    return Column(
       children: [
-        Expanded(
-          child: _SummaryCard(
-            title: 'Semana',
-            appointments: _dashboard!.thisWeek.appointments.toString(),
-            income: MoneyFormatter.formatCordobas(_dashboard!.thisWeek.income),
-            gradient: [accentColor, accentColor.withOpacity(0.7)],
-            textColor: textColor,
-            mutedColor: mutedColor,
-          ),
+        // Primera fila: Ingresos del día e Ingresos mensuales
+        Row(
+          children: [
+            Expanded(
+              child: _QuickStatCard(
+                icon: Iconsax.wallet_3,
+                value: MoneyFormatter.formatCordobas(today.income),
+                label: 'Ingresos hoy',
+                color: const Color(0xFF22C55E),
+                textColor: textColor,
+                mutedColor: mutedColor,
+                cardColor: cardColor,
+                borderColor: borderColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _QuickStatCard(
+                icon: Iconsax.wallet_3,
+                value: MoneyFormatter.formatCordobas(month.income),
+                label: 'Ingresos mes',
+                color: const Color(0xFF22C55E),
+                textColor: textColor,
+                mutedColor: mutedColor,
+                cardColor: cardColor,
+                borderColor: borderColor,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _SummaryCard(
-            title: 'Mes',
-            appointments: _dashboard!.thisMonth.appointments.toString(),
-            income: MoneyFormatter.formatCordobas(_dashboard!.thisMonth.income),
-            gradient: [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
-            textColor: textColor,
-            mutedColor: mutedColor,
-          ),
+        const SizedBox(height: 10),
+        // Segunda fila: Egresos del día y Egresos mensuales
+        Row(
+          children: [
+            Expanded(
+              child: _QuickStatCard(
+                icon: Iconsax.money_send,
+                value: MoneyFormatter.formatCordobas(today.expenses),
+                label: 'Egresos hoy',
+                color: const Color(0xFFF59E0B),
+                textColor: textColor,
+                mutedColor: mutedColor,
+                cardColor: cardColor,
+                borderColor: borderColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _QuickStatCard(
+                icon: Iconsax.money_send,
+                value: MoneyFormatter.formatCordobas(month.expenses),
+                label: 'Egresos mes',
+                color: const Color(0xFFF59E0B),
+                textColor: textColor,
+                mutedColor: mutedColor,
+                cardColor: cardColor,
+                borderColor: borderColor,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -491,94 +471,6 @@ class _QuickStatCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  final String title;
-  final String appointments;
-  final String income;
-  final List<Color> gradient;
-  final Color textColor;
-  final Color mutedColor;
-
-  const _SummaryCard({
-    required this.title,
-    required this.appointments,
-    required this.income,
-    required this.gradient,
-    required this.textColor,
-    required this.mutedColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradient,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: gradient[0].withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.9),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            appointments,
-            style: GoogleFonts.inter(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'citas',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: Colors.white.withOpacity(0.8),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              income,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
             ),
           ),
         ],

@@ -29,8 +29,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isEmployee = RoleHelper.isEmployee(ref);
     
     if (isEmployee) {
-      // Para trabajadores: visibleIndex 0 = Citas (real 1), 1 = Finanzas (real 3), 2 = Perfil (real 4)
-      const employeeMapping = [1, 3, 4];
+      // Para trabajadores: visibleIndex 0 = Citas (real 1), 1 = Servicios (real 2), 2 = Finanzas (real 3), 3 = Perfil (real 4)
+      const employeeMapping = [1, 2, 3, 4];
       return employeeMapping[visibleIndex];
     } else {
       // Para barberos: índice visible = índice real
@@ -43,7 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     if (isEmployee) {
       // Mapeo inverso para trabajadores
-      const employeeMapping = {1: 0, 3: 1, 4: 2};
+      const employeeMapping = {1: 0, 2: 1, 3: 2, 4: 3};
       return employeeMapping[realIndex] ?? 0;
     } else {
       return realIndex;
@@ -114,8 +114,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                       // Índice 1: Citas
                       const AppointmentsScreen(),
-                      // Índice 2: Servicios (solo para Barber)
-                      isEmployee ? const SizedBox.shrink() : const ServicesScreen(),
+                      // Índice 2: Servicios (para Barber y Employee, pero Employee solo lectura)
+                      const ServicesScreen(),
                       // Índice 3: Finanzas
                       const FinancesScreen(),
                       // Índice 4: Perfil

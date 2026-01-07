@@ -8,37 +8,45 @@ class EmployeeFinanceService {
 
   EmployeeFinanceService(this._dio);
 
-  /// Obtener ingresos del trabajador autenticado
+  String _formatDateTime(DateTime dateTime) {
+    final year = dateTime.year.toString();
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final second = dateTime.second.toString().padLeft(2, '0');
+    return '$year-$month-${day}T$hour:$minute:$second';
+  }
+
+  void _addDateFilters(Map<String, dynamic> queryParams, DateTime? startDate, DateTime? endDate) {
+    if (startDate != null) {
+      final normalizedStart = DateTime(startDate.year, startDate.month, startDate.day, 0, 0, 0);
+      queryParams['startDate'] = _formatDateTime(normalizedStart);
+    }
+    if (endDate != null) {
+      final normalizedEnd = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+      queryParams['endDate'] = _formatDateTime(normalizedEnd);
+    }
+  }
+
   Future<TransactionsResponse> getIncome({
     DateTime? startDate,
     DateTime? endDate,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
-      if (startDate != null) {
-        queryParams['startDate'] = startDate.toIso8601String().split('T')[0];
-      }
-      if (endDate != null) {
-        queryParams['endDate'] = endDate.toIso8601String().split('T')[0];
-      }
+      _addDateFilters(queryParams, startDate, endDate);
 
-      print('🌐 [EmployeeFinanceService] GET /employee/finances/income');
       final response = await _dio.get(
         '/employee/finances/income',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [EmployeeFinanceService] Income response status: ${response.statusCode}');
       return TransactionsResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      print('❌ [EmployeeFinanceService] Error al obtener ingresos: ${e.response?.statusCode}');
-      rethrow;
-    } catch (e) {
-      print('❌ [EmployeeFinanceService] Error inesperado: $e');
+    } on DioException {
       rethrow;
     }
   }
 
-  /// Crear ingreso manual (trabajador)
   Future<TransactionDto> createIncome({
     required double amount,
     required String description,
@@ -46,7 +54,6 @@ class EmployeeFinanceService {
     required DateTime date,
   }) async {
     try {
-      print('🌐 [EmployeeFinanceService] POST /employee/finances/income');
       final data = <String, dynamic>{
         'amount': amount,
         'description': description,
@@ -59,48 +66,30 @@ class EmployeeFinanceService {
         '/employee/finances/income',
         data: data,
       );
-      print('✅ [EmployeeFinanceService] Income created, status: ${response.statusCode}');
       return TransactionDto.fromJson(response.data);
-    } on DioException catch (e) {
-      print('❌ [EmployeeFinanceService] Error al crear ingreso: ${e.response?.statusCode}');
-      rethrow;
-    } catch (e) {
-      print('❌ [EmployeeFinanceService] Error inesperado: $e');
+    } on DioException {
       rethrow;
     }
   }
 
-  /// Obtener egresos del trabajador autenticado
   Future<TransactionsResponse> getExpenses({
     DateTime? startDate,
     DateTime? endDate,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
-      if (startDate != null) {
-        queryParams['startDate'] = startDate.toIso8601String().split('T')[0];
-      }
-      if (endDate != null) {
-        queryParams['endDate'] = endDate.toIso8601String().split('T')[0];
-      }
+      _addDateFilters(queryParams, startDate, endDate);
 
-      print('🌐 [EmployeeFinanceService] GET /employee/finances/expenses');
       final response = await _dio.get(
         '/employee/finances/expenses',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [EmployeeFinanceService] Expenses response status: ${response.statusCode}');
       return TransactionsResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      print('❌ [EmployeeFinanceService] Error al obtener egresos: ${e.response?.statusCode}');
-      rethrow;
-    } catch (e) {
-      print('❌ [EmployeeFinanceService] Error inesperado: $e');
+    } on DioException {
       rethrow;
     }
   }
 
-  /// Crear egreso (trabajador)
   Future<TransactionDto> createExpense({
     required double amount,
     required String description,
@@ -108,7 +97,6 @@ class EmployeeFinanceService {
     required DateTime date,
   }) async {
     try {
-      print('🌐 [EmployeeFinanceService] POST /employee/finances/expenses');
       final data = <String, dynamic>{
         'amount': amount,
         'description': description,
@@ -121,13 +109,8 @@ class EmployeeFinanceService {
         '/employee/finances/expenses',
         data: data,
       );
-      print('✅ [EmployeeFinanceService] Expense created, status: ${response.statusCode}');
       return TransactionDto.fromJson(response.data);
-    } on DioException catch (e) {
-      print('❌ [EmployeeFinanceService] Error al crear egreso: ${e.response?.statusCode}');
-      rethrow;
-    } catch (e) {
-      print('❌ [EmployeeFinanceService] Error inesperado: $e');
+    } on DioException {
       rethrow;
     }
   }
@@ -137,4 +120,3 @@ final employeeFinanceServiceProvider = Provider<EmployeeFinanceService>((ref) {
   final dio = ref.watch(dioProvider);
   return EmployeeFinanceService(dio);
 });
-

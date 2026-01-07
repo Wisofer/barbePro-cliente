@@ -7,6 +7,8 @@ import '../../models/appointment.dart';
 import '../../services/api/appointment_service.dart';
 import '../../services/api/employee_appointment_service.dart';
 import '../../utils/role_helper.dart';
+import '../../utils/jwt_decoder.dart';
+import '../../providers/auth_provider.dart';
 import 'create_appointment_screen.dart';
 import 'appointment_detail_screen.dart';
 
@@ -532,7 +534,7 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-class _AppointmentCard extends StatelessWidget {
+class _AppointmentCard extends ConsumerWidget {
   final AppointmentDto appointment;
   final Color textColor;
   final Color mutedColor;
@@ -597,12 +599,22 @@ class _AppointmentCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final statusColor = _getStatusColor(appointment.status);
     final dateTime = appointment.dateTime;
     final isToday = dateTime.year == DateTime.now().year &&
         dateTime.month == DateTime.now().month &&
         dateTime.day == DateTime.now().day;
+    
+    // Verificar si es mi cita (para empleados)
+    bool isMyAppointment = false;
+    final isEmployee = RoleHelper.isEmployee(ref);
+    if (isEmployee) {
+      final authState = ref.read(authNotifierProvider);
+      final currentEmployeeId = int.tryParse(JwtDecoder.getUserId(authState.userToken) ?? '') ?? 
+                                int.tryParse(authState.userProfile?.userId ?? '');
+      isMyAppointment = appointment.isAssignedTo(currentEmployeeId);
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -610,7 +622,10 @@ class _AppointmentCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: 1),
+          border: Border.all(
+            color: (isEmployee && isMyAppointment) ? accentColor.withOpacity(0.5) : borderColor, 
+            width: 1
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),

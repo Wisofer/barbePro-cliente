@@ -145,6 +145,47 @@ class BarberService {
     }
   }
 
+  /// Cambiar contraseña del barbero autenticado
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      print('🌐 [BarberService] POST /barber/change-password');
+      final response = await _dio.post(
+        '/barber/change-password',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+      print('✅ [BarberService] Change password status: ${response.statusCode}');
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      final data = e.response?.data;
+
+      // Mensajes amigables según respuesta del backend
+      if (statusCode == 400) {
+        final message = (data is Map && data['message'] is String)
+            ? data['message'] as String
+            : 'La contraseña actual es incorrecta.';
+        throw Exception(message);
+      }
+
+      if (statusCode == 401) {
+        throw Exception('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
+
+      final message = (data is Map && data['message'] is String)
+          ? data['message'] as String
+          : 'No se pudo cambiar la contraseña. Inténtalo más tarde.';
+      throw Exception(message);
+    } catch (e) {
+      print('❌ [BarberService] Error inesperado al cambiar contraseña: $e');
+      rethrow;
+    }
+  }
+
   Future<List<WorkingHoursDto>> getWorkingHours() async {
     try {
       print('🌐 [BarberService] GET /barber/working-hours');

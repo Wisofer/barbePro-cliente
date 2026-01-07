@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/api/barber_service.dart';
+import '../../services/api/employee_auth_service.dart';
+import '../../utils/role_helper.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -44,19 +47,32 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implementar cambio de contraseña cuando esté disponible en el API
-      // Por ahora mostramos un mensaje
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Funcionalidad en desarrollo'),
-            backgroundColor: Color(0xFF10B981),
-          ),
+      final current = _currentPasswordController.text.trim();
+      final next = _newPasswordController.text.trim();
+
+      if (RoleHelper.isBarber(ref)) {
+        final service = ref.read(barberServiceProvider);
+        await service.changePassword(
+          currentPassword: current,
+          newPassword: next,
         );
-        Navigator.pop(context);
+      } else if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeAuthServiceProvider);
+        await service.changePassword(
+          currentPassword: current,
+          newPassword: next,
+        );
       }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contraseña actualizada exitosamente'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+      Navigator.pop(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

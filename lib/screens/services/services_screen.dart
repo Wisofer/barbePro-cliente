@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/service.dart';
 import '../../services/api/service_service.dart';
+import '../../services/api/employee_service_service.dart';
+import '../../utils/role_helper.dart';
 import 'create_edit_service_screen.dart';
 
 class ServicesScreen extends ConsumerStatefulWidget {
@@ -32,8 +34,18 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     });
     try {
       print('🔵 [Services] Cargando servicios...');
-      final service = ref.read(serviceServiceProvider);
-      final services = await service.getServices();
+      List<ServiceDto> services;
+      
+      // Los empleados usan el endpoint /employee/services (solo lectura)
+      // Los barberos usan el endpoint /barber/services (con permisos completos)
+      if (RoleHelper.isEmployee(ref)) {
+        final employeeServiceService = ref.read(employeeServiceServiceProvider);
+        services = await employeeServiceService.getServices();
+      } else {
+        final service = ref.read(serviceServiceProvider);
+        services = await service.getServices();
+      }
+      
       print('✅ [Services] Servicios cargados: ${services.length}');
       if (mounted) {
         setState(() {
@@ -186,36 +198,38 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     ],
                   ),
                   const Spacer(),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CreateEditServiceScreen(),
+                  // Solo mostrar botón de crear para barberos
+                  if (RoleHelper.isBarber(ref))
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CreateEditServiceScreen(),
+                            ),
+                          );
+                          if (result == true) {
+                            _loadServices();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: accentColor.withAlpha(15),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        );
-                        if (result == true) {
-                          _loadServices();
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: accentColor.withAlpha(15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Iconsax.add,
-                          color: accentColor,
-                          size: 18,
+                          child: Icon(
+                            Iconsax.add,
+                            color: accentColor,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -234,17 +248,19 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                         )
                       : _services.isEmpty
                           ? _EmptyState(
-                              onAddService: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const CreateEditServiceScreen(),
-                                  ),
-                                );
-                                if (result == true) {
-                                  _loadServices();
-                                }
-                              },
+                              onAddService: RoleHelper.isBarber(ref)
+                                  ? () async {
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const CreateEditServiceScreen(),
+                                        ),
+                                      );
+                                      if (result == true) {
+                                        _loadServices();
+                                      }
+                                    }
+                                  : null,
                               textColor: textColor,
                               mutedColor: mutedColor,
                               accentColor: accentColor,
@@ -266,20 +282,24 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                                       cardColor: cardColor,
                                       borderColor: borderColor,
                                       accentColor: accentColor,
-                                      onEdit: () async {
-                                        final result = await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => CreateEditServiceScreen(
-                                              service: service,
-                                            ),
-                                          ),
-                                        );
-                                        if (result == true) {
-                                          _loadServices();
-                                        }
-                                      },
-                                      onDelete: () => _deleteService(service),
+                                      onEdit: RoleHelper.isBarber(ref)
+                                          ? () async {
+                                              final result = await Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => CreateEditServiceScreen(
+                                                    service: service,
+                                                  ),
+                                                ),
+                                              );
+                                              if (result == true) {
+                                                _loadServices();
+                                              }
+                                            }
+                                          : null,
+                                      onDelete: RoleHelper.isBarber(ref)
+                                          ? () => _deleteService(service)
+                                          : null,
                                     ),
                                   );
                                 },
@@ -294,13 +314,13 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 }
 
 class _EmptyState extends StatelessWidget {
-  final VoidCallback onAddService;
+  final VoidCallback? onAddService;
   final Color textColor;
   final Color mutedColor;
   final Color accentColor;
 
   const _EmptyState({
-    required this.onAddService,
+    this.onAddService,
     required this.textColor,
     required this.mutedColor,
     required this.accentColor,
@@ -339,7 +359,9 @@ class _EmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Agrega tu primer servicio para comenzar',
+                onAddService != null
+                    ? 'Agrega tu primer servicio para comenzar'
+                    : 'No hay servicios disponibles',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   color: mutedColor,
@@ -347,21 +369,23 @@ class _EmptyState extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: onAddService,
-                icon: const Icon(Iconsax.add, size: 18),
-                label: const Text('Agregar Servicio'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              if (onAddService != null) ...[
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: onAddService,
+                  icon: const Icon(Iconsax.add, size: 18),
+                  label: const Text('Agregar Servicio'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -444,8 +468,8 @@ class _ServiceCard extends StatelessWidget {
   final Color cardColor;
   final Color borderColor;
   final Color accentColor;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _ServiceCard({
     required this.service,
@@ -454,8 +478,8 @@ class _ServiceCard extends StatelessWidget {
     required this.cardColor,
     required this.borderColor,
     required this.accentColor,
-    required this.onEdit,
-    required this.onDelete,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -540,55 +564,58 @@ class _ServiceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Botones horizontales
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Botón editar
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onEdit,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: accentColor.withAlpha(15),
+                // Botones horizontales (solo para barberos)
+                if (onEdit != null || onDelete != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Botón editar
+                      if (onEdit != null)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onEdit,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: accentColor.withAlpha(30),
-                              width: 1,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: accentColor.withAlpha(15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: accentColor.withAlpha(30),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Iconsax.edit_2,
+                                size: 16,
+                                color: accentColor,
+                              ),
                             ),
-                          ),
-                          child: Icon(
-                            Iconsax.edit_2,
-                            size: 16,
-                            color: accentColor,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    // Botón eliminar
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onDelete,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withAlpha(15),
+                      if (onEdit != null && onDelete != null) const SizedBox(width: 6),
+                      // Botón eliminar
+                      if (onDelete != null)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onDelete,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFFEF4444).withAlpha(30),
-                              width: 1,
-                            ),
-                          ),
-                          child: Icon(
-                            Iconsax.trash,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444).withAlpha(15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFEF4444).withAlpha(30),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Iconsax.trash,
                             size: 16,
                             color: const Color(0xFFEF4444),
                           ),

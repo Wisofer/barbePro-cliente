@@ -1,5 +1,6 @@
 import 'barber.dart';
 import 'appointment.dart';
+import 'employee_reports.dart';
 
 class BarberDashboardDto {
   final BarberDto barber;
@@ -8,6 +9,7 @@ class BarberDashboardDto {
   final MonthStats thisMonth;
   final List<AppointmentDto> recentAppointments;
   final List<AppointmentDto> upcomingAppointments;
+  final EmployeeStatsDto? employeeStats;
 
   BarberDashboardDto({
     required this.barber,
@@ -16,6 +18,7 @@ class BarberDashboardDto {
     required this.thisMonth,
     required this.recentAppointments,
     required this.upcomingAppointments,
+    this.employeeStats,
   });
 
   factory BarberDashboardDto.fromJson(Map<String, dynamic> json) => BarberDashboardDto(
@@ -31,6 +34,9 @@ class BarberDashboardDto {
                 ?.map((e) => AppointmentDto.fromJson(e))
                 .toList() ??
             [],
+        employeeStats: json['employeeStats'] != null
+            ? EmployeeStatsDto.fromJson(json['employeeStats'] as Map<String, dynamic>)
+            : null,
       );
 }
 
@@ -39,12 +45,16 @@ class TodayStats {
   final int completed;
   final int pending;
   final double income;
+  final double expenses;
+  final double profit;
 
   TodayStats({
     required this.appointments,
     required this.completed,
     required this.pending,
     required this.income,
+    required this.expenses,
+    required this.profit,
   });
 
   factory TodayStats.fromJson(Map<String, dynamic> json) => TodayStats(
@@ -52,6 +62,8 @@ class TodayStats {
         completed: json['completed'] ?? 0,
         pending: json['pending'] ?? 0,
         income: (json['income'] ?? 0).toDouble(),
+        expenses: (json['expenses'] ?? 0).toDouble(),
+        profit: (json['profit'] ?? 0).toDouble(),
       );
 }
 

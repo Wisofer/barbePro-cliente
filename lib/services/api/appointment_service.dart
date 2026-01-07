@@ -119,6 +119,33 @@ class AppointmentService {
     }
   }
 
+  /// Obtener una cita específica
+  Future<AppointmentDto> getAppointment(int id) async {
+    try {
+      print('🌐 [AppointmentService] GET /barber/appointments/$id');
+      final response = await _dio.get('/barber/appointments/$id');
+      print('✅ [AppointmentService] Appointment retrieved, status: ${response.statusCode}');
+      
+      if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message: 'El servidor devolvió HTML. Posible sesión expirada o token inválido.',
+        );
+      }
+      
+      return AppointmentDto.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      print('❌ [AppointmentService] Error al obtener cita: ${e.response?.statusCode}');
+      print('📋 [AppointmentService] Error data: ${e.response?.data}');
+      rethrow;
+    } catch (e) {
+      print('❌ [AppointmentService] Error inesperado: $e');
+      rethrow;
+    }
+  }
+
   Future<AppointmentDto> updateAppointment({
     required int id,
     String? status,

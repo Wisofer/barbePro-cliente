@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/finance.dart';
 import '../../services/api/barber_service.dart';
+import '../../services/api/employee_finance_service.dart';
 import '../../utils/money_formatter.dart';
 import '../../utils/role_helper.dart';
 import 'income_screen.dart';
@@ -29,13 +30,59 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
   }
 
   Future<void> _loadSummary() async {
-    // Si es Employee, no cargar resumen (no disponible)
+    // Si es Employee, calcular resumen desde ingresos y egresos
     if (RoleHelper.isEmployee(ref)) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = null;
-        });
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      try {
+        final now = DateTime.now();
+        final startOfMonth = DateTime(now.year, now.month, 1);
+        final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+        
+        final employeeService = ref.read(employeeFinanceServiceProvider);
+        final incomeResponse = await employeeService.getIncome(
+          startDate: startOfMonth,
+          endDate: endOfMonth,
+        );
+        final expensesResponse = await employeeService.getExpenses(
+          startDate: startOfMonth,
+          endDate: endOfMonth,
+        );
+        
+        final incomeThisMonth = incomeResponse.items.fold<double>(0.0, (sum, item) => sum + item.amount);
+        final expensesThisMonth = expensesResponse.items.fold<double>(0.0, (sum, item) => sum + item.amount);
+        final profitThisMonth = incomeThisMonth - expensesThisMonth;
+        
+        final totalIncomeResponse = await employeeService.getIncome();
+        final totalExpensesResponse = await employeeService.getExpenses();
+        
+        final totalIncome = totalIncomeResponse.items.fold<double>(0.0, (sum, item) => sum + item.amount);
+        final totalExpenses = totalExpensesResponse.items.fold<double>(0.0, (sum, item) => sum + item.amount);
+        final netProfit = totalIncome - totalExpenses;
+        
+        if (mounted) {
+          setState(() {
+            _summary = FinanceSummaryDto(
+              incomeThisMonth: incomeThisMonth,
+              expensesThisMonth: expensesThisMonth,
+              profitThisMonth: profitThisMonth,
+              totalIncome: totalIncome,
+              totalExpenses: totalExpenses,
+              netProfit: netProfit,
+            );
+            _isLoading = false;
+            _errorMessage = null;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = e.toString().replaceAll('Exception: ', '');
+          });
+        }
       }
       return;
     }
@@ -97,18 +144,6 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
     final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
     final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB);
     const accentColor = Color(0xFF10B981);
-
-    // Si es Employee, mostrar solo las opciones de Ingresos y Egresos
-    if (RoleHelper.isEmployee(ref)) {
-      return _buildEmployeeFinancesView(
-        textColor: textColor,
-        mutedColor: mutedColor,
-        cardColor: cardColor,
-        borderColor: borderColor,
-        accentColor: accentColor,
-        bgColor: bgColor,
-      );
-    }
 
     if (_isLoading) {
       return Center(child: CircularProgressIndicator(color: accentColor));
@@ -191,46 +226,6 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
     );
   }
 
-  Widget _buildEmployeeFinancesView({
-    required Color textColor,
-    required Color mutedColor,
-    required Color cardColor,
-    required Color borderColor,
-    required Color accentColor,
-    required Color bgColor,
-  }) {
-    return Container(
-      color: bgColor,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          // Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Text(
-                'Finanzas',
-                style: GoogleFonts.inter(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: textColor,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
-
-          // Accesos rápidos para trabajadores
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildQuickAccess(textColor, mutedColor, cardColor, borderColor, accentColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProfitCard(Color textColor, Color mutedColor, Color accentColor) {
     final profit = _summary!.profitThisMonth;

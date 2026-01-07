@@ -8,6 +8,7 @@ import '../../models/service.dart';
 import '../../services/api/appointment_service.dart';
 import '../../services/api/employee_appointment_service.dart';
 import '../../services/api/service_service.dart';
+import '../../services/api/employee_service_service.dart';
 import '../../utils/role_helper.dart';
 
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
@@ -44,20 +45,18 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
 
   Future<void> _loadServices() async {
     try {
-      // Los trabajadores no pueden ver servicios según la documentación
-      // Solo el dueño puede gestionar servicios
+      List<ServiceDto> services;
+      
+      // Los empleados usan el endpoint /employee/services (solo lectura)
+      // Los barberos usan el endpoint /barber/services (con permisos completos)
       if (RoleHelper.isEmployee(ref)) {
-        if (mounted) {
-          setState(() {
-            _services = []; // Trabajadores no pueden ver servicios
-            _isLoadingServices = false;
-          });
-        }
-        return;
+        final employeeServiceService = ref.read(employeeServiceServiceProvider);
+        services = await employeeServiceService.getServices();
+      } else {
+        final service = ref.read(serviceServiceProvider);
+        services = await service.getServices();
       }
-
-      final service = ref.read(serviceServiceProvider);
-      final services = await service.getServices();
+      
       if (mounted) {
         setState(() {
           _services = services.where((s) => s.isActive).toList();
@@ -67,15 +66,12 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingServices = false);
-        // Solo mostrar error si es Barber, para Employee es esperado
-        if (RoleHelper.isBarber(ref)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al cargar servicios: $e'),
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar servicios: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
       }
     }
   }

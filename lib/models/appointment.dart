@@ -5,6 +5,10 @@ class AppointmentDto {
   final int barberId;
   final String barberName;
   
+  // Información del empleado asignado
+  final int? employeeId;
+  final String? employeeName;
+  
   // Lista de todos los servicios (NUEVO)
   final List<ServiceDto> services;
   
@@ -24,6 +28,8 @@ class AppointmentDto {
     required this.id,
     required this.barberId,
     required this.barberName,
+    this.employeeId,
+    this.employeeName,
     required this.services,
     this.serviceId,
     this.serviceName,
@@ -66,6 +72,8 @@ class AppointmentDto {
       id: json['id'] ?? 0,
       barberId: json['barberId'] ?? 0,
       barberName: json['barberName'] ?? '',
+      employeeId: json['employeeId'] is String ? int.tryParse(json['employeeId']) : json['employeeId'] as int?,
+      employeeName: json['employeeName'] as String?,
       services: servicesList,
       serviceId: serviceId,
       serviceName: serviceName ?? '',
@@ -85,6 +93,8 @@ class AppointmentDto {
         'id': id,
         'barberId': barberId,
         'barberName': barberName,
+        'employeeId': employeeId,
+        'employeeName': employeeName,
         'serviceId': serviceId,
         'serviceName': serviceName,
         'servicePrice': servicePrice,
@@ -113,5 +123,14 @@ class AppointmentDto {
   bool get isConfirmed => status == 'Confirmed';
   bool get isCancelled => status == 'Cancelled';
   bool get isCompleted => status == 'Completed';
+  
+  // Helpers para verificar asignación
+  bool get isAssigned => employeeId != null;
+  bool get isUnassigned => employeeId == null;
+  
+  // Verificar si está asignada al empleado actual (requiere pasar el employeeId actual)
+  bool isAssignedTo(int? currentEmployeeId) {
+    return employeeId != null && employeeId == currentEmployeeId;
+  }
 }
 
