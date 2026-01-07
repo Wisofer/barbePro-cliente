@@ -219,8 +219,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     }
 
+    // Primero verificar el rol desde el token
+    final role = JwtDecoder.getUserRole(state.userToken!);
+    
+    // Si es Employee, no intentar cargar perfil del barbero
+    if (role == 'Employee') {
+      final fallback = _buildProfileFromToken(state.userToken!);
+      if (fallback != null) {
+        state = state.copyWith(userProfile: fallback);
+        return true;
+      }
+      return false;
+    }
+
     try {
-      // Intentar obtener perfil desde el barber service
+      // Solo intentar obtener perfil del barbero si es rol Barber
       final barberService = ref.read(barberServiceProvider);
       final barberProfile = await barberService.getProfile();
       

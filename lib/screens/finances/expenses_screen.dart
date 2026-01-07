@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/finance.dart';
 import '../../services/api/finance_service.dart';
+import '../../services/api/employee_finance_service.dart';
 import '../../utils/money_formatter.dart';
+import '../../utils/role_helper.dart';
 import 'create_edit_expense_screen.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
@@ -35,11 +37,23 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     });
     try {
       print('🔵 [Expenses] Cargando egresos...');
-      final service = ref.read(financeServiceProvider);
-      final data = await service.getExpenses(
-        startDate: _startDate,
-        endDate: _endDate,
-      );
+      
+      // Usar el servicio correcto según el rol
+      TransactionsResponse data;
+      if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeFinanceServiceProvider);
+        data = await service.getExpenses(
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      } else {
+        final service = ref.read(financeServiceProvider);
+        data = await service.getExpenses(
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      }
+      
       print('✅ [Expenses] Egresos cargados: ${data.items.length}');
       if (mounted) {
         setState(() {

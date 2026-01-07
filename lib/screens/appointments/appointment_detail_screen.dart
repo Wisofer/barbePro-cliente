@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/appointment.dart';
 import '../../services/api/appointment_service.dart';
 import '../../services/api/service_service.dart';
+import '../../utils/role_helper.dart';
 
 class AppointmentDetailScreen extends ConsumerStatefulWidget {
   final AppointmentDto appointment;
@@ -48,11 +49,18 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
     setState(() => _isLoading = true);
 
     try {
-      final service = ref.read(appointmentServiceProvider);
-      final updated = await service.updateAppointment(
-        id: _appointment.id,
-        status: newStatus,
-      );
+      // Usar el servicio correcto según el rol
+      AppointmentDto updated;
+      if (RoleHelper.isEmployee(ref)) {
+        // Los trabajadores no pueden actualizar citas, solo el dueño
+        throw Exception('Los trabajadores no pueden actualizar el estado de las citas');
+      } else {
+        final service = ref.read(appointmentServiceProvider);
+        updated = await service.updateAppointment(
+          id: _appointment.id,
+          status: newStatus,
+        );
+      }
 
       if (mounted) {
         setState(() {
@@ -103,6 +111,11 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
     setState(() => _isLoading = true);
 
     try {
+      // Solo Barber puede actualizar citas con servicios
+      if (RoleHelper.isEmployee(ref)) {
+        throw Exception('Los trabajadores no pueden actualizar citas con servicios');
+      }
+
       final service = ref.read(appointmentServiceProvider);
       final updated = await service.updateAppointment(
         id: _appointment.id,
@@ -152,6 +165,38 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
 
   Future<List<int>?> _showServiceSelectionDialog() async {
     try {
+      // Solo Barber puede ver servicios
+      if (RoleHelper.isEmployee(ref)) {
+        // Trabajadores no pueden seleccionar servicios
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              'Servicios no disponibles',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+            content: Text(
+              'Los trabajadores no pueden gestionar servicios. ¿Deseas completar la cita sin servicios?',
+              style: GoogleFonts.inter(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancelar', style: GoogleFonts.inter()),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Completar sin servicios',
+                  style: GoogleFonts.inter(color: const Color(0xFF10B981)),
+                ),
+              ),
+            ],
+          ),
+        );
+        return result == true ? [] : null;
+      }
+
       final serviceService = ref.read(serviceServiceProvider);
       final services = await serviceService.getServices();
       final activeServices = services.where((s) => s.isActive).toList();
@@ -411,6 +456,11 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
 
   Future<void> _sendWhatsAppMessage() async {
     try {
+      // Solo Barber puede enviar WhatsApp (requiere perfil del barbero)
+      if (RoleHelper.isEmployee(ref)) {
+        throw Exception('Los trabajadores no pueden enviar mensajes de WhatsApp');
+      }
+
       final service = ref.read(appointmentServiceProvider);
       final whatsappData = await service.getWhatsAppUrl(_appointment.id);
       
@@ -468,6 +518,11 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
     setState(() => _isDeleting = true);
 
     try {
+      // Solo Barber puede eliminar citas
+      if (RoleHelper.isEmployee(ref)) {
+        throw Exception('Los trabajadores no pueden eliminar citas');
+      }
+
       final service = ref.read(appointmentServiceProvider);
       await service.deleteAppointment(_appointment.id);
 
@@ -568,21 +623,24 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
         ),
         actions: [
-          if (_isDeleting)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+          // Solo Barber puede eliminar citas
+          if (RoleHelper.isBarber(ref)) ...[
+            if (_isDeleting)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                onPressed: _deleteAppointment,
+                icon: const Icon(Iconsax.trash),
+                color: const Color(0xFFEF4444),
               ),
-            )
-          else
-            IconButton(
-              onPressed: _deleteAppointment,
-              icon: const Icon(Iconsax.trash),
-              color: const Color(0xFFEF4444),
-            ),
+          ],
         ],
       ),
       body: _isLoading
@@ -790,8 +848,8 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                   ),
                   const SizedBox(height: 32),
 
-                  // Status Actions
-                  if (_appointment.status == 'Pending') ...[
+                  // Status Actions (solo para Barber)
+                  if (RoleHelper.isBarber(ref) && _appointment.status == 'Pending') ...[
                     Text(
                       'Acciones',
                       style: GoogleFonts.inter(
@@ -834,7 +892,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                         ),
                       ),
                     ),
-                  ] else if (_appointment.status == 'Confirmed') ...[
+                  ] else if (RoleHelper.isBarber(ref) && _appointment.status == 'Confirmed') ...[
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(

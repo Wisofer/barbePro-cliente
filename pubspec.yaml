@@ -55,6 +55,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/logo2.png
     - assets/images/logo3.png
+    - assets/images/logobarbe.png
     - assets/audios/success.mp3
     - assets/audios/error.mp3
 

@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/finance.dart';
 import '../../services/api/finance_service.dart';
+import '../../services/api/employee_finance_service.dart';
 import '../../utils/money_formatter.dart';
+import '../../utils/role_helper.dart';
 import 'create_income_screen.dart';
 
 class IncomeScreen extends ConsumerStatefulWidget {
@@ -36,11 +38,23 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     });
     try {
       print('🔵 [Income] Cargando ingresos...');
-      final service = ref.read(financeServiceProvider);
-      final data = await service.getIncome(
-        startDate: _startDate,
-        endDate: _endDate,
-      );
+      
+      // Usar el servicio correcto según el rol
+      TransactionsResponse data;
+      if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeFinanceServiceProvider);
+        data = await service.getIncome(
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      } else {
+        final service = ref.read(financeServiceProvider);
+        data = await service.getIncome(
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      }
+      
       print('✅ [Income] Ingresos cargados: ${data.items.length}');
       if (mounted) {
         setState(() {

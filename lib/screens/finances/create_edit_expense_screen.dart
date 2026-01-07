@@ -5,6 +5,8 @@ import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/finance.dart';
 import '../../services/api/finance_service.dart';
+import '../../services/api/employee_finance_service.dart';
+import '../../utils/role_helper.dart';
 
 class CreateEditExpenseScreen extends ConsumerStatefulWidget {
   final TransactionDto? expense;
@@ -97,37 +99,47 @@ class _CreateEditExpenseScreenState extends ConsumerState<CreateEditExpenseScree
     setState(() => _isLoading = true);
 
     try {
-      final service = ref.read(financeServiceProvider);
-      if (widget.expense == null) {
-        // Crear
-        await service.createExpense(
-          amount: double.parse(_amountController.text),
-          description: _descriptionController.text.trim(),
-          category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
-          date: _selectedDate!,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Egreso creado exitosamente'),
-              backgroundColor: Color(0xFF10B981),
-            ),
+      // Usar el servicio correcto según el rol
+      if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeFinanceServiceProvider);
+        if (widget.expense == null) {
+          // Crear
+          await service.createExpense(
+            amount: double.parse(_amountController.text),
+            description: _descriptionController.text.trim(),
+            category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
+            date: _selectedDate!,
           );
+        } else {
+          // Los empleados no pueden editar egresos, solo crear
+          throw Exception('Los trabajadores no pueden editar egresos');
         }
       } else {
-        // Actualizar
-        await service.updateExpense(
-          id: widget.expense!.id,
-          amount: double.parse(_amountController.text),
-          description: _descriptionController.text.trim(),
-          category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
-          date: _selectedDate!,
-        );
+        final service = ref.read(financeServiceProvider);
+        if (widget.expense == null) {
+          // Crear
+          await service.createExpense(
+            amount: double.parse(_amountController.text),
+            description: _descriptionController.text.trim(),
+            category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
+            date: _selectedDate!,
+          );
+        } else {
+          // Actualizar
+          await service.updateExpense(
+            id: widget.expense!.id,
+            amount: double.parse(_amountController.text),
+            description: _descriptionController.text.trim(),
+            category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
+            date: _selectedDate!,
+          );
+        }
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Egreso actualizado exitosamente'),
-              backgroundColor: Color(0xFF10B981),
+            SnackBar(
+              content: Text(widget.expense == null ? 'Egreso creado exitosamente' : 'Egreso actualizado exitosamente'),
+              backgroundColor: const Color(0xFF10B981),
             ),
           );
         }

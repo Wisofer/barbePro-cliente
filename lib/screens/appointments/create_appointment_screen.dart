@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/service.dart';
 import '../../services/api/appointment_service.dart';
+import '../../services/api/employee_appointment_service.dart';
 import '../../services/api/service_service.dart';
+import '../../utils/role_helper.dart';
 
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
   const CreateAppointmentScreen({super.key});
@@ -42,6 +44,18 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
 
   Future<void> _loadServices() async {
     try {
+      // Los trabajadores no pueden ver servicios según la documentación
+      // Solo el dueño puede gestionar servicios
+      if (RoleHelper.isEmployee(ref)) {
+        if (mounted) {
+          setState(() {
+            _services = []; // Trabajadores no pueden ver servicios
+            _isLoadingServices = false;
+          });
+        }
+        return;
+      }
+
       final service = ref.read(serviceServiceProvider);
       final services = await service.getServices();
       if (mounted) {
@@ -53,12 +67,15 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingServices = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cargar servicios: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
+        // Solo mostrar error si es Barber, para Employee es esperado
+        if (RoleHelper.isBarber(ref)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al cargar servicios: $e'),
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+          );
+        }
       }
     }
   }
@@ -136,14 +153,26 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     setState(() => _isLoading = true);
 
     try {
-      final service = ref.read(appointmentServiceProvider);
-      await service.createAppointment(
-        serviceIds: _selectedServiceIds.isEmpty ? null : _selectedServiceIds,
-        clientName: _clientNameController.text.trim(),
-        clientPhone: _clientPhoneController.text.trim(),
-        date: '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
-        time: '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
-      );
+      // Usar el servicio correcto según el rol
+      if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeAppointmentServiceProvider);
+        await service.createAppointment(
+          serviceIds: _selectedServiceIds.isEmpty ? null : _selectedServiceIds,
+          clientName: _clientNameController.text.trim(),
+          clientPhone: _clientPhoneController.text.trim(),
+          date: '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+          time: '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
+        );
+      } else {
+        final service = ref.read(appointmentServiceProvider);
+        await service.createAppointment(
+          serviceIds: _selectedServiceIds.isEmpty ? null : _selectedServiceIds,
+          clientName: _clientNameController.text.trim(),
+          clientPhone: _clientPhoneController.text.trim(),
+          date: '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+          time: '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

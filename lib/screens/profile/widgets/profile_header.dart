@@ -37,7 +37,7 @@ class ProfileHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Avatar
+          // Avatar con logo
           Container(
             width: 64,
             height: 64,
@@ -51,11 +51,28 @@ class ProfileHeader extends StatelessWidget {
                   const Color(0xFF059669),
                 ],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(
-              Iconsax.scissor5,
-              color: Colors.white,
-              size: 32,
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logobarbe.png',
+                width: 64,
+                height: 64,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Iconsax.scissor5,
+                    color: Colors.white,
+                    size: 32,
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(width: 16),

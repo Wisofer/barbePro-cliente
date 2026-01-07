@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/api/finance_service.dart';
+import '../../services/api/employee_finance_service.dart';
+import '../../utils/role_helper.dart';
 
 class CreateIncomeScreen extends ConsumerStatefulWidget {
   const CreateIncomeScreen({super.key});
@@ -84,13 +86,24 @@ class _CreateIncomeScreenState extends ConsumerState<CreateIncomeScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final service = ref.read(financeServiceProvider);
-      await service.createIncome(
-        amount: double.parse(_amountController.text),
-        description: _descriptionController.text.trim(),
-        category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
-        date: _selectedDate!,
-      );
+      // Usar el servicio correcto según el rol
+      if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeFinanceServiceProvider);
+        await service.createIncome(
+          amount: double.parse(_amountController.text),
+          description: _descriptionController.text.trim(),
+          category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
+          date: _selectedDate!,
+        );
+      } else {
+        final service = ref.read(financeServiceProvider);
+        await service.createIncome(
+          amount: double.parse(_amountController.text),
+          description: _descriptionController.text.trim(),
+          category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
+          date: _selectedDate!,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

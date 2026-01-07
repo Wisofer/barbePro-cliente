@@ -16,96 +16,154 @@ class AppHeader extends ConsumerWidget {
 
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFD1D5DB);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    const accentColor = Color(0xFF10B981); // Verde suave
+    const accentColor = Color(0xFF10B981);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemMovilTheme.getStatusBarStyle(isDark),
       child: Container(
         decoration: BoxDecoration(
-          color: cardColor,
-          border: Border(bottom: BorderSide(color: borderColor, width: 1)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    const Color(0xFF0F172A),
+                    const Color(0xFF1E293B),
+                  ]
+                : [
+                    const Color(0xFFF0FDF4),
+                    const Color(0xFFECFDF5),
+                  ],
+          ),
         ),
         child: SafeArea(
           bottom: false,
-        child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-        children: [
-                // Logo con fondo verde suave
-          Container(
-                  width: 44,
-                  height: 44,
-            decoration: BoxDecoration(
-                    color: accentColor.withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
-            ),
-            child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                'assets/images/logo3.png',
-                      width: 44,
-                      height: 44,
-                fit: BoxFit.cover,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Row(
+              children: [
+                // Logo
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(11),
+                    child: Image.asset(
+                      'assets/images/logobarbe.png',
+                      width: 42,
+                      height: 42,
+                      fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          Iconsax.scissor,
+                        print('❌ [AppHeader] Error cargando logo: $error');
+                        return Container(
                           color: accentColor,
-                          size: 24,
+                          child: Icon(
+                            Iconsax.scissor,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         );
                       },
-              ),
-            ),
-          ),
-                const SizedBox(width: 12),
-          
-                // Título
-          Expanded(
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // Título y subtítulo
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'BarberPro',
-              style: GoogleFonts.inter(
+                        style: GoogleFonts.inter(
                           fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: textColor,
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
                           letterSpacing: -0.5,
+                          height: 1.1,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        'Sistema de Gestión',
+                        'Gestión profesional',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: mutedColor,
                           fontWeight: FontWeight.w500,
-              ),
+                          letterSpacing: 0.2,
+                        ),
                       ),
                     ],
-            ),
-          ),
-          
-                // Botón de perfil
-          GestureDetector(
-            onTap: () => ProfileMenu.show(context, ref),
-            child: Container(
-                    width: 44,
-                    height: 44,
-              decoration: BoxDecoration(
-                color: cardColor,
-                      borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderColor),
-              ),
-                    child: Icon(
-                      Iconsax.profile_circle,
-                      color: accentColor,
-                      size: 22,
+                  ),
+                ),
+                
+                // Botón de perfil con notificación
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => ProfileMenu.show(context, ref),
+                    borderRadius: BorderRadius.circular(11),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            borderRadius: BorderRadius.circular(11),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Iconsax.user,
+                            color: accentColor,
+                            size: 20,
+                          ),
+                        ),
+                        // Indicador de estado activo
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: accentColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-            ),
-          ),
-        ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),

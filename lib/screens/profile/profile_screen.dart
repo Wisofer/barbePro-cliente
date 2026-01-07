@@ -16,6 +16,8 @@ import 'quick_stats_screen.dart';
 import 'help_support_screen.dart';
 import 'export_data_screen.dart';
 import 'settings_screen.dart';
+import 'employees_screen.dart';
+import '../../utils/role_helper.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_option.dart';
 import 'widgets/profile_error_state.dart';
@@ -39,6 +41,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
+    // Si es Employee, no cargar perfil del barbero (no disponible)
+    if (RoleHelper.isEmployee(ref)) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -145,6 +158,183 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return Center(child: CircularProgressIndicator(color: accentColor));
     }
 
+    // Si es Employee, mostrar perfil simplificado
+    if (RoleHelper.isEmployee(ref)) {
+      final authState = ref.read(authNotifierProvider);
+      final userProfile = authState.userProfile;
+      
+      return RefreshIndicator(
+        onRefresh: _loadProfile,
+        color: accentColor,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Header simplificado para trabajador
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [accentColor, accentColor.withOpacity(0.7)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(Iconsax.user, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userProfile?.nombreCompleto ?? 'Trabajador',
+                            style: GoogleFonts.inter(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            userProfile?.email ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: mutedColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Opciones disponibles para trabajadores
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  children: [
+                    // Cambiar Contraseña
+                    ProfileOption(
+                      icon: Iconsax.lock,
+                      title: 'Cambiar Contraseña',
+                      subtitle: 'Actualiza tu contraseña de acceso',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ChangePasswordScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Ayuda y Soporte
+                    ProfileOption(
+                      icon: Iconsax.message_question,
+                      title: 'Ayuda y Soporte',
+                      subtitle: 'Preguntas frecuentes y contacto',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpSupportScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Configuración
+                    ProfileOption(
+                      icon: Iconsax.setting_2,
+                      title: 'Configuración',
+                      subtitle: 'Tema, notificaciones e idioma',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Acerca de
+                    ProfileOption(
+                      icon: Iconsax.info_circle,
+                      title: 'Acerca de',
+                      subtitle: 'Información sobre la aplicación y desarrolladores',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AboutScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Botón cerrar sesión
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: borderColor, width: 1),
+                    ),
+                  ),
+                  padding: const EdgeInsets.only(top: 16),
+                  child: ProfileOption(
+                    icon: Iconsax.logout,
+                    title: 'Cerrar Sesión',
+                    subtitle: 'Salir de tu cuenta',
+                    onTap: _logout,
+                    textColor: const Color(0xFFEF4444),
+                    mutedColor: const Color(0xFFEF4444),
+                    cardColor: cardColor,
+                    borderColor: Colors.transparent,
+                    accentColor: const Color(0xFFEF4444),
+                    isDestructive: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (_profile == null) {
       return ProfileErrorState(
         errorMessage: _errorMessage,
@@ -202,26 +392,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Código QR
-                  ProfileOption(
-                    icon: Iconsax.scan_barcode,
-                    title: 'Código QR',
-                    subtitle: 'Comparte tu QR para que los clientes agenden citas',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => QrCodeScreen(profile: _profile!),
-                        ),
-                      );
-                    },
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 10),
+                  // Código QR (solo para Barber)
+                  if (RoleHelper.isBarber(ref)) ...[
+                    ProfileOption(
+                      icon: Iconsax.scan_barcode,
+                      title: 'Código QR',
+                      subtitle: 'Comparte tu QR para que los clientes agenden citas',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QrCodeScreen(profile: _profile!),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
                   // Cambiar Contraseña
                   ProfileOption(
@@ -244,70 +436,99 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // URL Pública
-                  ProfileOption(
-                    icon: Iconsax.link,
-                    title: 'URL Pública',
-                    subtitle: _profile!.qrUrl,
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(text: _profile!.qrUrl));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('URL copiada al portapapeles'),
-                          backgroundColor: accentColor,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 10),
+                  // URL Pública (solo para Barber)
+                  if (RoleHelper.isBarber(ref)) ...[
+                    ProfileOption(
+                      icon: Iconsax.link,
+                      title: 'URL Pública',
+                      subtitle: _profile!.qrUrl,
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: _profile!.qrUrl));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('URL copiada al portapapeles'),
+                            backgroundColor: accentColor,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
-                  // Horarios de Trabajo
-                  ProfileOption(
-                    icon: Iconsax.clock,
-                    title: 'Horarios de Trabajo',
-                    subtitle: 'Configurar días y horarios disponibles',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const WorkingHoursScreen(),
-                        ),
-                      );
-                    },
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 10),
+                  // Horarios de Trabajo (solo para Barber)
+                  if (RoleHelper.isBarber(ref)) ...[
+                    ProfileOption(
+                      icon: Iconsax.clock,
+                      title: 'Horarios de Trabajo',
+                      subtitle: 'Configurar días y horarios disponibles',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WorkingHoursScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
-                  // Estadísticas Rápidas
-                  ProfileOption(
-                    icon: Iconsax.chart_2,
-                    title: 'Estadísticas Rápidas',
-                    subtitle: 'Resumen de citas, ingresos y clientes',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const QuickStatsScreen(),
-                        ),
-                      );
-                    },
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 10),
+                  // Trabajadores (solo para Barber)
+                  if (RoleHelper.isBarber(ref)) ...[
+                    ProfileOption(
+                      icon: Iconsax.people,
+                      title: 'Trabajadores',
+                      subtitle: 'Gestionar empleados y trabajadores',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EmployeesScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Estadísticas Rápidas (solo para Barber)
+                  if (RoleHelper.isBarber(ref)) ...[
+                    ProfileOption(
+                      icon: Iconsax.chart_2,
+                      title: 'Estadísticas Rápidas',
+                      subtitle: 'Resumen de citas, ingresos y clientes',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const QuickStatsScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
                   // Ayuda y Soporte
                   ProfileOption(
@@ -330,26 +551,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Exportar Datos
-                  ProfileOption(
-                    icon: Iconsax.document_download,
-                    title: 'Exportar Datos',
-                    subtitle: 'Exportar reportes y crear backup',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ExportDataScreen(),
-                        ),
-                      );
-                    },
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    cardColor: cardColor,
-                    borderColor: borderColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 10),
+                  // Exportar Datos (solo para Barber)
+                  if (RoleHelper.isBarber(ref)) ...[
+                    ProfileOption(
+                      icon: Iconsax.document_download,
+                      title: 'Exportar Datos',
+                      subtitle: 'Exportar reportes y crear backup',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ExportDataScreen(),
+                          ),
+                        );
+                      },
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      cardColor: cardColor,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
                   // Configuración
                   ProfileOption(

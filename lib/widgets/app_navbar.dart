@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../utils/role_helper.dart';
 
-class AppNavbar extends StatelessWidget {
+class AppNavbar extends ConsumerWidget {
   final int currentIndex;
   final Function(int)? onTap;
 
@@ -12,16 +14,32 @@ class AppNavbar extends StatelessWidget {
     this.onTap,
   });
 
-  static const _items = [
-    _NavItem(icon: Iconsax.home_2, activeIcon: Iconsax.home_25, label: 'Inicio'),
-    _NavItem(icon: Iconsax.calendar_2, activeIcon: Iconsax.calendar_25, label: 'Citas'),
-    _NavItem(icon: Iconsax.scissor, activeIcon: Iconsax.scissor, label: 'Servicios'), // Mismo icono, solo cambia color
-    _NavItem(icon: Iconsax.wallet, activeIcon: Iconsax.wallet, label: 'Finanzas'), // Mismo icono, solo cambia color
-    _NavItem(icon: Iconsax.profile_circle, activeIcon: Iconsax.profile_circle5, label: 'Perfil'),
+  static const _allItems = [
+    _NavItem(icon: Iconsax.home_2, activeIcon: Iconsax.home_25, label: 'Inicio', id: 'dashboard'),
+    _NavItem(icon: Iconsax.calendar_2, activeIcon: Iconsax.calendar_25, label: 'Citas', id: 'appointments'),
+    _NavItem(icon: Iconsax.scissor, activeIcon: Iconsax.scissor, label: 'Servicios', id: 'services'),
+    _NavItem(icon: Iconsax.wallet, activeIcon: Iconsax.wallet, label: 'Finanzas', id: 'finances'),
+    _NavItem(icon: Iconsax.profile_circle, activeIcon: Iconsax.profile_circle5, label: 'Perfil', id: 'profile'),
   ];
 
+  List<_NavItem> _getVisibleItems(WidgetRef ref) {
+    final isEmployee = RoleHelper.isEmployee(ref);
+    
+    if (isEmployee) {
+      // Trabajadores solo ven: Citas, Finanzas, Perfil
+      return _allItems.where((item) => 
+        item.id == 'appointments' || 
+        item.id == 'finances' || 
+        item.id == 'profile'
+      ).toList();
+    } else {
+      // Barberos ven todas las opciones
+      return _allItems;
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -29,6 +47,8 @@ class AppNavbar extends StatelessWidget {
     final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFD1D5DB);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
     const accentColor = Color(0xFF10B981); // Verde suave
+
+    final visibleItems = _getVisibleItems(ref);
 
     return Container(
       decoration: BoxDecoration(
@@ -46,21 +66,21 @@ class AppNavbar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(_items.length, (index) {
-            final item = _items[index];
-            final isActive = index == currentIndex;
+            children: List.generate(visibleItems.length, (index) {
+              final item = visibleItems[index];
+              final isActive = index == currentIndex;
 
-            return _NavItemWidget(
-              icon: isActive ? item.activeIcon : item.icon,
-              label: item.label,
-              isActive: isActive,
-              activeColor: accentColor,
-              inactiveColor: mutedColor,
-              onTap: () => onTap?.call(index),
-            );
-          }),
+              return _NavItemWidget(
+                icon: isActive ? item.activeIcon : item.icon,
+                label: item.label,
+                isActive: isActive,
+                activeColor: accentColor,
+                inactiveColor: mutedColor,
+                onTap: () => onTap?.call(index),
+              );
+            }),
           ),
         ),
       ),
@@ -72,11 +92,13 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final String id;
 
   const _NavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
+    required this.id,
   });
 }
 

@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/appointment.dart';
 import '../../services/api/appointment_service.dart';
+import '../../services/api/employee_appointment_service.dart';
+import '../../utils/role_helper.dart';
 import 'create_appointment_screen.dart';
 import 'appointment_detail_screen.dart';
 
@@ -34,7 +36,6 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
     });
     try {
       print('🔵 [Appointments] Cargando citas...');
-      final service = ref.read(appointmentServiceProvider);
       
       // Configurar filtros según el tab seleccionado
       String? date;
@@ -49,10 +50,22 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         status = 'Pending';
       }
       
-      final appointments = await service.getAppointments(
-        date: date,
-        status: status,
-      );
+      // Usar el servicio correcto según el rol
+      List<AppointmentDto> appointments;
+      if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeAppointmentServiceProvider);
+        appointments = await service.getAppointments(
+          date: date,
+          status: status,
+        );
+      } else {
+        final service = ref.read(appointmentServiceProvider);
+        appointments = await service.getAppointments(
+          date: date,
+          status: status,
+        );
+      }
+      
       print('✅ [Appointments] Citas cargadas: ${appointments.length}');
       if (mounted) {
         setState(() {
