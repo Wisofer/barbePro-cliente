@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'settings_state.dart';
+import '../../utils/audio_helper.dart';
 
 class SettingsNotifier extends StateNotifier<SettingsState> {
   SettingsNotifier() : super(SettingsState.initial()) {
@@ -23,6 +24,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       final showOnline = prefs.getBool('show_online_status') ?? true;
       final allowMessages = prefs.getBool('allow_messages') ?? true;
       final isDark = prefs.getBool('is_dark_mode') ?? false;
+      final soundsEnabled = prefs.getBool('sounds_enabled') ?? true;
       state = state.copyWith(
         themeMode: themeMode,
         language: language,
@@ -32,7 +34,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         showOnlineStatus: showOnline,
         allowMessages: allowMessages,
         isDarkMode: isDark,
+        soundsEnabled: soundsEnabled,
       );
+      
+      // Inicializar AudioHelper con el valor de settings
+      AudioHelper.setEnabled(soundsEnabled);
     } catch (_) {
       // keep defaults on error
     }
@@ -99,6 +105,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('is_dark_mode', isDark);
+    } catch (_) {}
+  }
+
+  Future<void> setSoundsEnabled(bool enabled) async {
+    state = state.copyWith(soundsEnabled: enabled);
+    // Actualizar AudioHelper inmediatamente
+    AudioHelper.setEnabled(enabled);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('sounds_enabled', enabled);
     } catch (_) {}
   }
 }

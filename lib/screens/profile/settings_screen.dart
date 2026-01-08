@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/settings/settings_notifier.dart';
+import '../../utils/audio_helper.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -143,21 +144,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingOption(
                     icon: Iconsax.sound,
                     title: 'Sonidos',
-                    subtitle: 'Disponible',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: accentColor.withAlpha(20),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Próximo',
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: accentColor,
-                        ),
-                      ),
+                    subtitle: settings.soundsEnabled ? 'Activados' : 'Desactivados',
+                    trailing: Switch(
+                      value: settings.soundsEnabled,
+                      onChanged: (value) {
+                        ref.read(settingsNotifierProvider.notifier).setSoundsEnabled(value);
+                        // Actualizar AudioHelper inmediatamente
+                        AudioHelper.setEnabled(value);
+                      },
+                      activeColor: accentColor,
                     ),
                     textColor: textColor,
                     mutedColor: mutedColor,

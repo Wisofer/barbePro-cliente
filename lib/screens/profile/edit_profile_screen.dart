@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/barber.dart';
 import '../../services/api/barber_service.dart';
+import '../../utils/audio_helper.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   final BarberDto profile;
@@ -72,6 +73,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
       if (mounted) {
+        // Reproducir audio de éxito
+        AudioHelper.playSuccess();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Perfil actualizado correctamente'),
@@ -83,6 +87,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     } on DioException catch (e) {
       final message = e.response?.data?['message'] ?? 'Error al actualizar el perfil';
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -92,6 +99,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),

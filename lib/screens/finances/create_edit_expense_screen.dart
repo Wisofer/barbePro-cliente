@@ -7,6 +7,7 @@ import '../../models/finance.dart';
 import '../../services/api/finance_service.dart';
 import '../../services/api/employee_finance_service.dart';
 import '../../utils/role_helper.dart';
+import '../../utils/audio_helper.dart';
 
 class CreateEditExpenseScreen extends ConsumerStatefulWidget {
   final TransactionDto? expense;
@@ -136,6 +137,9 @@ class _CreateEditExpenseScreenState extends ConsumerState<CreateEditExpenseScree
         }
         
         if (mounted) {
+          // Reproducir audio de éxito
+          AudioHelper.playSuccess();
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(widget.expense == null ? 'Egreso creado exitosamente' : 'Egreso actualizado exitosamente'),
@@ -149,6 +153,9 @@ class _CreateEditExpenseScreenState extends ConsumerState<CreateEditExpenseScree
       }
     } catch (e) {
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),

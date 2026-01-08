@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../main_theme.dart';
 import '../../services/storage/credentials_storage.dart';
+import '../../utils/audio_helper.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -89,10 +90,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
       if (!success) {
         final authState = ref.read(authNotifierProvider);
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         setState(() {
           _errorMessage = authState.errorMessage ?? 'Credenciales inválidas';
         });
       } else {
+        // Reproducir audio de éxito
+        AudioHelper.playSuccess();
+        
         if (_rememberCredentials) {
           await _credentialsStorage.saveCredentials(
             _userController.text.trim(),
@@ -103,6 +110,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
         }
       }
     } catch (e) {
+      // Reproducir audio de error
+      AudioHelper.playError();
+      
       setState(() {
         _errorMessage = 'Error de conexión';
       });
@@ -493,9 +503,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                               ),
                               GestureDetector(
                                 onTap: () async {
-                                  final uri = Uri.parse('https://www.cowib.es');
-                                  if (await canLaunchUrl(uri)) {
-                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  try {
+                                    final uri = Uri.parse('https://www.cowib.es');
+                                    await launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  } catch (e) {
+                                    // Si no se puede abrir, intentar con el navegador por defecto
+                                    try {
+                                      final uri = Uri.parse('https://www.cowib.es');
+                                      await launchUrl(uri, mode: LaunchMode.platformDefault);
+                                    } catch (e2) {
+                                      // Error al abrir URL
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('No se pudo abrir la página: ${e2.toString()}'),
+                                            backgroundColor: const Color(0xFFEF4444),
+                                          ),
+                                        );
+                                      }
+                                    }
                                   }
                                 },
                                 child: Text(

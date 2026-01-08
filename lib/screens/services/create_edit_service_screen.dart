@@ -5,6 +5,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/service.dart';
 import '../../services/api/service_service.dart';
+import '../../utils/audio_helper.dart';
 
 class CreateEditServiceScreen extends ConsumerStatefulWidget {
   final ServiceDto? service;
@@ -70,6 +71,9 @@ class _CreateEditServiceScreenState extends ConsumerState<CreateEditServiceScree
           durationMinutes: durationMinutes,
         );
         if (mounted) {
+          // Reproducir audio de éxito
+          AudioHelper.playSuccess();
+          
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Servicio creado exitosamente'),
@@ -88,6 +92,9 @@ class _CreateEditServiceScreenState extends ConsumerState<CreateEditServiceScree
           isActive: _isActive,
         );
         if (mounted) {
+          // Reproducir audio de éxito
+          AudioHelper.playSuccess();
+          
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Servicio actualizado exitosamente'),
@@ -99,6 +106,9 @@ class _CreateEditServiceScreenState extends ConsumerState<CreateEditServiceScree
       }
     } catch (e) {
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),

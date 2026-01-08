@@ -55,6 +55,7 @@ class EmployeeAppointmentService {
   }
 
   /// Crear cita manual (trabajador)
+  /// Las citas creadas manualmente por el trabajador se crean directamente como confirmadas
   Future<AppointmentDto> createAppointment({
     List<int>? serviceIds,
     required String clientName,
@@ -68,6 +69,7 @@ class EmployeeAppointmentService {
         'clientPhone': clientPhone,
         'date': date,
         'time': time,
+        'status': 'Confirmed', // Las citas creadas manualmente por el trabajador se crean directamente como confirmadas
       };
       
       if (serviceIds != null && serviceIds.isNotEmpty) {

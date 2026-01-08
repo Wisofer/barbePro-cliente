@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/api/finance_service.dart';
 import '../../services/api/employee_finance_service.dart';
 import '../../utils/role_helper.dart';
+import '../../utils/audio_helper.dart';
 
 class CreateIncomeScreen extends ConsumerStatefulWidget {
   const CreateIncomeScreen({super.key});
@@ -106,6 +107,9 @@ class _CreateIncomeScreenState extends ConsumerState<CreateIncomeScreen> {
       }
 
       if (mounted) {
+        // Reproducir audio de éxito
+        AudioHelper.playSuccess();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Ingreso creado exitosamente'),
@@ -116,6 +120,9 @@ class _CreateIncomeScreenState extends ConsumerState<CreateIncomeScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),

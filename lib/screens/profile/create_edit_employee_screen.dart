@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/employee.dart';
 import '../../services/api/employee_service.dart';
+import '../../utils/audio_helper.dart';
 
 class CreateEditEmployeeScreen extends ConsumerStatefulWidget {
   final EmployeeDto? employee;
@@ -87,6 +88,9 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
 
         await service.createEmployee(request);
         if (mounted) {
+          // Reproducir audio de éxito
+          AudioHelper.playSuccess();
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Trabajador "${name}" creado exitosamente'),
@@ -109,6 +113,9 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
 
         await service.updateEmployee(widget.employee!.id, request);
         if (mounted) {
+          // Reproducir audio de éxito
+          AudioHelper.playSuccess();
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Trabajador "${name}" actualizado exitosamente'),
@@ -133,6 +140,9 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
       }
 
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $errorMessage'),
@@ -146,6 +156,9 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
       }
     } catch (e) {
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),

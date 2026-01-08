@@ -14,6 +14,7 @@ import '../../services/api/employee_service_service.dart';
 import '../../utils/role_helper.dart';
 import '../../utils/jwt_decoder.dart';
 import '../../utils/money_formatter.dart';
+import '../../utils/audio_helper.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/pending_appointments_provider.dart';
 
@@ -77,6 +78,9 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
           _appointment = updated;
           _isLoading = false;
         });
+
+        // Reproducir audio de éxito
+        AudioHelper.playSuccess();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -164,6 +168,9 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
         } else if (newStatus != 'Pending') {
           ref.read(pendingAppointmentsProvider.notifier).refresh();
         }
+        
+        // Reproducir audio de éxito
+        AudioHelper.playSuccess();
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -548,6 +555,9 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
         }
         
         setState(() => _isDeleting = false);
+        // Reproducir audio de éxito
+        AudioHelper.playSuccess();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cita eliminada exitosamente'),
@@ -560,6 +570,9 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
       final message = e.response?.data?['message'] ?? 'Error al eliminar la cita';
       if (mounted) {
         setState(() => _isDeleting = false);
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -570,6 +583,9 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
     } catch (e) {
       if (mounted) {
         setState(() => _isDeleting = false);
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),

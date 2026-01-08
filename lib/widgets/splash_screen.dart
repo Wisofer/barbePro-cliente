@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../main_theme.dart';
 
 class SplashScreen extends StatelessWidget {
@@ -6,10 +7,12 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemMovilTheme.getStatusBarStyle(false),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Logo simple
@@ -42,7 +45,8 @@ class SplashScreen extends StatelessWidget {
                 strokeWidth: 3,
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -10,6 +10,7 @@ import '../../services/api/employee_appointment_service.dart';
 import '../../services/api/service_service.dart';
 import '../../services/api/employee_service_service.dart';
 import '../../utils/role_helper.dart';
+import '../../utils/audio_helper.dart';
 import '../../providers/pending_appointments_provider.dart';
 
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
@@ -175,6 +176,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
       }
 
       if (mounted) {
+        // Reproducir audio de éxito
+        AudioHelper.playSuccess();
+        
         // Actualizar contador de pendientes (por si la cita se creó como pendiente)
         ref.read(pendingAppointmentsProvider.notifier).refresh();
         
@@ -189,6 +193,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     } on DioException catch (e) {
       final message = e.response?.data?['message'] ?? 'Error al crear la cita';
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -198,6 +205,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
       }
     } catch (e) {
       if (mounted) {
+        // Reproducir audio de error
+        AudioHelper.playError();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
