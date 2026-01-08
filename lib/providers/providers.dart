@@ -36,17 +36,10 @@ final dioProvider = Provider<Dio>((ref) {
           options.headers['Accept'] = 'application/json';
           options.headers['Content-Type'] = 'application/json';
           
-          print('🔑 [Dio] Token agregado a request: ${options.uri}');
-          print('🔑 [Dio] Method: ${options.method}');
-          print('🔑 [Dio] Token (primeros 20 chars): ${access.substring(0, access.length > 20 ? 20 : access.length)}...');
-          print('🔑 [Dio] Header Authorization: Bearer ${access.substring(0, access.length > 30 ? 30 : access.length)}...');
-          print('🔑 [Dio] Headers enviados: ${options.headers}');
         } else {
           options.headers.remove('Authorization');
-          print('⚠️ [Dio] No hay token disponible para: ${options.uri}');
         }
       } catch (e) {
-        print('❌ [Dio] Error al obtener token: $e');
         // Ignore read errors; proceed without Authorization
       }
       handler.next(options);
@@ -54,12 +47,6 @@ final dioProvider = Provider<Dio>((ref) {
     onResponse: (response, handler) {
       // Verificar si la respuesta es HTML en lugar de JSON
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
-        print('⚠️ [Dio] Respuesta HTML recibida en lugar de JSON para: ${response.requestOptions.uri}');
-        print('⚠️ [Dio] Status code: ${response.statusCode}');
-        print('⚠️ [Dio] Headers de respuesta: ${response.headers}');
-        print('⚠️ [Dio] Request headers enviados: ${response.requestOptions.headers}');
-        print('⚠️ [Dio] Esto generalmente indica que el token no es válido o expiró');
-        print('⚠️ [Dio] Primeros 200 chars de la respuesta: ${(response.data as String).substring(0, (response.data as String).length > 200 ? 200 : (response.data as String).length)}');
         return handler.reject(
           DioException(
             requestOptions: response.requestOptions,

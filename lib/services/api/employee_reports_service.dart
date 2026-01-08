@@ -26,13 +26,10 @@ class EmployeeReportsService {
         queryParams['employeeId'] = employeeId.toString();
       }
 
-      print('🌐 [EmployeeReportsService] GET /barber/reports/employees/appointments');
-      print('📦 [EmployeeReportsService] Query params: $queryParams');
       final response = await _dio.get(
         '/barber/reports/employees/appointments',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [EmployeeReportsService] Appointments report response status: ${response.statusCode}');
 
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -45,11 +42,8 @@ class EmployeeReportsService {
 
       return EmployeeAppointmentsReportDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [EmployeeReportsService] Error en appointments report: ${e.response?.statusCode}');
-      print('📋 [EmployeeReportsService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeReportsService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -72,13 +66,10 @@ class EmployeeReportsService {
         queryParams['employeeId'] = employeeId.toString();
       }
 
-      print('🌐 [EmployeeReportsService] GET /barber/reports/employees/income');
-      print('📦 [EmployeeReportsService] Query params: $queryParams');
       final response = await _dio.get(
         '/barber/reports/employees/income',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [EmployeeReportsService] Income report response status: ${response.statusCode}');
 
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -91,11 +82,8 @@ class EmployeeReportsService {
 
       return EmployeeIncomeReportDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [EmployeeReportsService] Error en income report: ${e.response?.statusCode}');
-      print('📋 [EmployeeReportsService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeReportsService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -118,13 +106,10 @@ class EmployeeReportsService {
         queryParams['employeeId'] = employeeId.toString();
       }
 
-      print('🌐 [EmployeeReportsService] GET /barber/reports/employees/expenses');
-      print('📦 [EmployeeReportsService] Query params: $queryParams');
       final response = await _dio.get(
         '/barber/reports/employees/expenses',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [EmployeeReportsService] Expenses report response status: ${response.statusCode}');
 
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -137,11 +122,8 @@ class EmployeeReportsService {
 
       return EmployeeExpensesReportDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [EmployeeReportsService] Error en expenses report: ${e.response?.statusCode}');
-      print('📋 [EmployeeReportsService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeReportsService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -160,13 +142,10 @@ class EmployeeReportsService {
         queryParams['endDate'] = endDate.toIso8601String();
       }
 
-      print('🌐 [EmployeeReportsService] GET /barber/reports/employees/activity');
-      print('📦 [EmployeeReportsService] Query params: $queryParams');
       final response = await _dio.get(
         '/barber/reports/employees/activity',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [EmployeeReportsService] Activity report response status: ${response.statusCode}');
 
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -179,11 +158,8 @@ class EmployeeReportsService {
 
       return EmployeeActivityReportDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [EmployeeReportsService] Error en activity report: ${e.response?.statusCode}');
-      print('📋 [EmployeeReportsService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeReportsService] Error inesperado: $e');
       rethrow;
     }
   }

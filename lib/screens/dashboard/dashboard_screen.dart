@@ -173,6 +173,9 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            // Espacio superior para separar del header
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            
             // Stats rápidas horizontales
             SliverToBoxAdapter(
               child: Padding(

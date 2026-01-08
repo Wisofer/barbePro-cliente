@@ -45,7 +45,6 @@ class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
         });
       }
     } on DioException catch (e) {
-      print('❌ [QR] Error al cargar: ${e.response?.statusCode}');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(

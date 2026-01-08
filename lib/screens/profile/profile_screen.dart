@@ -58,10 +58,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _errorMessage = null;
     });
     try {
-      print('🔵 [Profile] Cargando perfil...');
       final service = ref.read(barberServiceProvider);
       final profile = await service.getProfile();
-      print('✅ [Profile] Perfil cargado: ${profile.name}, ${profile.businessName}');
       if (mounted) {
         setState(() {
           _profile = profile;
@@ -86,8 +84,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         message = 'Endpoint no encontrado. Verifica la configuración del servidor.';
       }
       
-      print('❌ [Profile] Error HTTP: $statusCode');
-      print('📋 [Profile] Error data: $errorData');
       
       if (mounted) {
         setState(() {
@@ -96,8 +92,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         });
       }
     } catch (e, stackTrace) {
-      print('❌ [Profile] Error al cargar: $e');
-      print('📋 [Profile] StackTrace: $stackTrace');
       if (mounted) {
         setState(() {
           _isLoading = false;

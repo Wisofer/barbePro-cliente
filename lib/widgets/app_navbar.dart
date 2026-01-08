@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:badges/badges.dart' as badges;
 import '../utils/role_helper.dart';
+import '../providers/pending_appointments_provider.dart';
 
 class AppNavbar extends ConsumerWidget {
   final int currentIndex;
@@ -72,6 +74,11 @@ class AppNavbar extends ConsumerWidget {
             children: List.generate(visibleItems.length, (index) {
               final item = visibleItems[index];
               final isActive = index == currentIndex;
+              
+              // Obtener contador de pendientes solo para el tab de citas
+              final pendingCount = item.id == 'appointments' 
+                  ? ref.watch(pendingAppointmentsProvider)
+                  : 0;
 
               return _NavItemWidget(
                 icon: isActive ? item.activeIcon : item.icon,
@@ -80,6 +87,7 @@ class AppNavbar extends ConsumerWidget {
                 activeColor: accentColor,
                 inactiveColor: mutedColor,
                 onTap: () => onTap?.call(index),
+                badgeCount: item.id == 'appointments' ? pendingCount : 0,
               );
             }),
           ),
@@ -110,6 +118,7 @@ class _NavItemWidget extends StatelessWidget {
   final Color activeColor;
   final Color inactiveColor;
   final VoidCallback? onTap;
+  final int badgeCount;
 
   const _NavItemWidget({
     required this.icon,
@@ -118,6 +127,7 @@ class _NavItemWidget extends StatelessWidget {
     required this.activeColor,
     required this.inactiveColor,
     this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
@@ -136,7 +146,26 @@ class _NavItemWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 22),
+            // Badge solo si hay citas pendientes
+            badgeCount > 0
+                ? badges.Badge(
+                    badgeContent: Text(
+                      badgeCount > 99 ? '99+' : badgeCount.toString(),
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    badgeStyle: badges.BadgeStyle(
+                      badgeColor: const Color(0xFFEF4444),
+                      padding: const EdgeInsets.all(4),
+                      borderRadius: BorderRadius.circular(8),
+                      elevation: 0,
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  )
+                : Icon(icon, color: color, size: 22),
             const SizedBox(height: 4),
             Text(
               label,

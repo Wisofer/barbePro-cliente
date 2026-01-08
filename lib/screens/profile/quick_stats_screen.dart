@@ -31,7 +31,6 @@ class _QuickStatsScreenState extends ConsumerState<QuickStatsScreen> {
     });
 
     try {
-      print('🔵 [QuickStats] Cargando estadísticas...');
       final service = ref.read(barberServiceProvider);
       final dashboard = await service.getDashboard();
       
@@ -72,7 +71,6 @@ class _QuickStatsScreenState extends ConsumerState<QuickStatsScreen> {
         });
       }
     } catch (e) {
-      print('❌ [QuickStats] Error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

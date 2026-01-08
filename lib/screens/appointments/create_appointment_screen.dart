@@ -10,6 +10,7 @@ import '../../services/api/employee_appointment_service.dart';
 import '../../services/api/service_service.dart';
 import '../../services/api/employee_service_service.dart';
 import '../../utils/role_helper.dart';
+import '../../providers/pending_appointments_provider.dart';
 
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
   const CreateAppointmentScreen({super.key});
@@ -174,6 +175,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
       }
 
       if (mounted) {
+        // Actualizar contador de pendientes (por si la cita se creó como pendiente)
+        ref.read(pendingAppointmentsProvider.notifier).refresh();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cita creada exitosamente'),

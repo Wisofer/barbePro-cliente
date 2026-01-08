@@ -101,7 +101,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // Verificar si el token está expirado
         if (JwtDecoder.isTokenExpired(savedToken)) {
           // Token expirado, intentar refrescar antes de limpiar
-          print('🔄 [Auth] Token expirado, intentando refrescar...');
           
           // Solo intentar refresh si hay refreshToken disponible
           if (refreshToken != null && refreshToken.isNotEmpty) {
@@ -109,7 +108,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
             
             if (refreshed != null && refreshed.isNotEmpty) {
               // Token refrescado exitosamente
-              print('✅ [Auth] Token refrescado exitosamente');
               _dio.options.headers['Authorization'] = 'Bearer $refreshed';
               state = state.copyWith(
                 userToken: refreshed,
@@ -119,12 +117,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
               await loadUserProfile();
             } else {
               // No se pudo refrescar, limpiar y pedir login
-              print('❌ [Auth] No se pudo refrescar el token, limpiando estado');
               await _clearAuthState();
             }
           } else {
             // No hay refreshToken, limpiar y pedir login
-            print('❌ [Auth] No hay refreshToken disponible, limpiando estado');
             await _clearAuthState();
           }
         } else {
@@ -145,7 +141,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       }
     } catch (e) {
-      print('❌ [Auth] Error en _initializeAuth: $e');
       await _clearAuthState();
     } finally {
       state = state.copyWith(isInitialized: true);
@@ -155,7 +150,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Intenta refrescar el token usando el refresh token
   Future<String?> _tryRefreshToken(String refreshToken) async {
     try {
-      print('🔄 [Auth] Intentando refrescar token...');
       final response = await _dio.post(
         '/auth/refresh',
         data: {
@@ -178,15 +172,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
             newToken, 
             newRefreshToken ?? newToken, // Si no hay nuevo refreshToken, usar el mismo
           );
-          print('✅ [Auth] Nuevos tokens guardados (access + refresh)');
           return newToken;
         }
       }
       
-      print('⚠️ [Auth] Respuesta de refresh no válida: ${response.statusCode}');
       return null;
     } catch (e) {
-      print('❌ [Auth] Error al refrescar token: $e');
       return null;
     }
   }

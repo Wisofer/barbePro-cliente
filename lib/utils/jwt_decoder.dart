@@ -60,18 +60,36 @@ class JwtDecoder {
       
       
       // Buscar el rol en diferentes claims posibles
+      // 1. Claim estándar simple
       String? role = payloadMap['role'] as String?;
-      if (role == null) {
-        role = payloadMap['Role'] as String?;
-      }
-      if (role == null) {
-        role = payloadMap['roles'] as String?;
-      }
-      if (role == null) {
-        role = payloadMap['userRole'] as String?;
+      if (role != null) {
+        return role;
       }
       
-      return role;
+      // 2. Claim con mayúscula
+      role = payloadMap['Role'] as String?;
+      if (role != null) {
+        return role;
+      }
+      
+      // 3. Claim de Microsoft (el que usa el backend)
+      role = payloadMap['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] as String?;
+      if (role != null) {
+        return role;
+      }
+      
+      // 4. Otros claims posibles
+      role = payloadMap['roles'] as String?;
+      if (role != null) {
+        return role;
+      }
+      
+      role = payloadMap['userRole'] as String?;
+      if (role != null) {
+        return role;
+      }
+      
+      return null;
     } catch (e) {
       return null;
     }

@@ -33,7 +33,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       _errorMessage = null;
     });
     try {
-      print('🔵 [Services] Cargando servicios...');
       List<ServiceDto> services;
       
       // Los empleados usan el endpoint /employee/services (solo lectura)
@@ -46,7 +45,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         services = await service.getServices();
       }
       
-      print('✅ [Services] Servicios cargados: ${services.length}');
       if (mounted) {
         setState(() {
           _services = services;
@@ -79,8 +77,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         return;
       }
       
-      print('❌ [Services] Error HTTP: $statusCode');
-      print('📋 [Services] Error data: $errorData');
       
       if (mounted) {
         setState(() {
@@ -89,8 +85,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         });
       }
     } catch (e, stackTrace) {
-      print('❌ [Services] Error al cargar: $e');
-      print('📋 [Services] StackTrace: $stackTrace');
       if (mounted) {
         setState(() {
           _isLoading = false;

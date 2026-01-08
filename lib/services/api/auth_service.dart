@@ -12,7 +12,6 @@ class AuthService {
 
   Future<LoginResponse> login(String email, String password) async {
     try {
-      print('🔵 [AuthService] Iniciando login para: $email');
       final response = await _dio.post(
         '/auth/login',
         data: {
@@ -21,30 +20,21 @@ class AuthService {
         },
       );
       
-      print('✅ [AuthService] Login response status: ${response.statusCode}');
-      print('📦 [AuthService] Login response data type: ${response.data.runtimeType}');
       
       final loginResponse = LoginResponse.fromJson(response.data);
       
-      print('🔑 [AuthService] Token recibido (primeros 30 chars): ${loginResponse.token.substring(0, loginResponse.token.length > 30 ? 30 : loginResponse.token.length)}...');
-      print('🔄 [AuthService] RefreshToken recibido (primeros 30 chars): ${loginResponse.refreshToken.substring(0, loginResponse.refreshToken.length > 30 ? 30 : loginResponse.refreshToken.length)}...');
       
       // Guardar ambos tokens (access y refresh)
       await _tokenStorage.saveTokens(loginResponse.token, loginResponse.refreshToken);
-      print('💾 [AuthService] Tokens guardados en storage (access + refresh)');
       
       // Verificar que se guardó correctamente
       final savedToken = await _tokenStorage.getAccessToken();
       if (savedToken != null && savedToken == loginResponse.token) {
-        print('✅ [AuthService] Token verificado en storage correctamente');
       } else {
-        print('⚠️ [AuthService] Advertencia: El token guardado no coincide con el recibido');
       }
       
       return loginResponse;
     } on DioException catch (e) {
-      print('❌ [AuthService] Error en login: ${e.response?.statusCode}');
-      print('📋 [AuthService] Error data: ${e.response?.data}');
       if (e.response?.statusCode == 401) {
         throw Exception('Credenciales inválidas');
       }

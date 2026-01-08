@@ -38,45 +38,44 @@ class AppHeader extends ConsumerWidget {
         child: SafeArea(
           bottom: false,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
             child: Row(
               children: [
                 // Logo
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(9),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
+                        blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(9),
                     child: Image.asset(
                       'assets/images/logobarbe.png',
-                      width: 42,
-                      height: 42,
+                      width: 36,
+                      height: 36,
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
-                        print('❌ [AppHeader] Error cargando logo: $error');
                         return Container(
                           color: accentColor,
                           child: Icon(
                             Iconsax.scissor,
                             color: Colors.white,
-                            size: 22,
+                            size: 20,
                           ),
                         );
                       },
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 
                 // Título y subtítulo
                 Expanded(
@@ -87,18 +86,18 @@ class AppHeader extends ConsumerWidget {
                       Text(
                         'BarbeNic',
                         style: GoogleFonts.inter(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: textColor,
                           letterSpacing: -0.5,
                           height: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         'Gestión profesional',
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: 10,
                           color: mutedColor,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.2,

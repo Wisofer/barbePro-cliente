@@ -31,10 +31,8 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
       _errorMessage = null;
     });
     try {
-      print('🔵 [Employees] Cargando trabajadores...');
       final service = ref.read(employeeServiceProvider);
       final employees = await service.getEmployees();
-      print('✅ [Employees] Trabajadores cargados: ${employees.length}');
       if (mounted) {
         setState(() {
           _employees = employees;
@@ -67,8 +65,6 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
         return;
       }
       
-      print('❌ [Employees] Error HTTP: $statusCode');
-      print('📋 [Employees] Error data: $errorData');
       
       if (mounted) {
         setState(() {
@@ -77,8 +73,6 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
         });
       }
     } catch (e, stackTrace) {
-      print('❌ [Employees] Error al cargar: $e');
-      print('📋 [Employees] StackTrace: $stackTrace');
       if (mounted) {
         setState(() {
           _isLoading = false;

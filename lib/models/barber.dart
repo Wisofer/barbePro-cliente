@@ -147,9 +147,6 @@ class WorkingHoursDto {
         isActive: json['isActive'] ?? false,
       );
     } catch (e, stackTrace) {
-      print('❌ [WorkingHoursDto] Error parsing WorkingHoursDto: $e');
-      print('📋 [WorkingHoursDto] JSON data: $json');
-      print('📋 [WorkingHoursDto] StackTrace: $stackTrace');
       rethrow;
     }
   }

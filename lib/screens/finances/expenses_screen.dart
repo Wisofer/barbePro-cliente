@@ -70,8 +70,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         message = e.message ?? 'Error desconocido';
       }
       
-      print('❌ [Expenses] Error HTTP: $statusCode');
-      print('📋 [Expenses] Error data: $errorData');
       
       if (mounted) {
         setState(() {

@@ -5,6 +5,7 @@ import '../main_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_navbar.dart';
 import '../utils/role_helper.dart';
+import '../providers/pending_appointments_provider.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'appointments/appointments_screen.dart';
 import 'services/services_screen.dart';
@@ -18,11 +19,32 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   final GlobalKey<DashboardScreenState> _dashboardKey = GlobalKey();
   
   bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Cuando la app vuelve al foreground, actualizar contador de pendientes
+    if (state == AppLifecycleState.resumed) {
+      ref.read(pendingAppointmentsProvider.notifier).refresh();
+    }
+  }
 
   // Mapeo de índices visibles a índices reales de pantallas
   int _getRealIndex(int visibleIndex) {

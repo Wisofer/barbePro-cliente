@@ -32,10 +32,8 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
     });
 
     try {
-      print('🔵 [HelpSupport] Cargando ayuda y soporte...');
       final service = ref.read(helpSupportServiceProvider);
       final helpSupport = await service.getHelpSupport();
-      print('✅ [HelpSupport] Ayuda cargada: ${helpSupport.faqs.length} FAQs');
       
       if (mounted) {
         setState(() {
@@ -60,7 +58,6 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
         });
       }
     } catch (e) {
-      print('❌ [HelpSupport] Error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

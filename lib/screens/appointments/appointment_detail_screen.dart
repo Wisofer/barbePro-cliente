@@ -15,6 +15,7 @@ import '../../utils/role_helper.dart';
 import '../../utils/jwt_decoder.dart';
 import '../../utils/money_formatter.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/pending_appointments_provider.dart';
 
 class AppointmentDetailScreen extends ConsumerStatefulWidget {
   final AppointmentDto appointment;
@@ -84,6 +85,18 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
           ),
         );
         
+        // Actualizar contador de pendientes si cambió el estado
+        if (_appointment.status == 'Pending' && newStatus != 'Pending') {
+          // Si era pendiente y ahora no lo es, decrementar contador
+          ref.read(pendingAppointmentsProvider.notifier).decrement();
+        } else if (_appointment.status != 'Pending' && newStatus == 'Pending') {
+          // Si no era pendiente y ahora lo es, incrementar contador
+          ref.read(pendingAppointmentsProvider.notifier).increment();
+        } else if (newStatus != 'Pending') {
+          // Si cambió a otro estado (no pendiente), refrescar contador completo
+          ref.read(pendingAppointmentsProvider.notifier).refresh();
+        }
+        
         // Si se confirmó la cita, ofrecer enviar WhatsApp (solo para Barber)
         if (newStatus == 'Confirmed' && RoleHelper.isBarber(ref)) {
           await _showWhatsAppDialog();
@@ -143,6 +156,15 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
           _isLoading = false;
         });
 
+        // Actualizar contador de pendientes si cambió el estado
+        if (_appointment.status == 'Pending' && newStatus != 'Pending') {
+          ref.read(pendingAppointmentsProvider.notifier).decrement();
+        } else if (_appointment.status != 'Pending' && newStatus == 'Pending') {
+          ref.read(pendingAppointmentsProvider.notifier).increment();
+        } else if (newStatus != 'Pending') {
+          ref.read(pendingAppointmentsProvider.notifier).refresh();
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cita completada exitosamente'),
@@ -470,7 +492,6 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
         }
       }
     } catch (e) {
-      print('❌ [AppointmentDetail] Error al obtener URL de WhatsApp: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -518,6 +539,14 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
       await service.deleteAppointment(_appointment.id);
 
       if (mounted) {
+        // Si la cita era pendiente, decrementar contador
+        if (_appointment.status == 'Pending') {
+          ref.read(pendingAppointmentsProvider.notifier).decrement();
+        } else {
+          // Refrescar contador completo por si acaso
+          ref.read(pendingAppointmentsProvider.notifier).refresh();
+        }
+        
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -856,6 +885,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                           (isEmployee && (_appointment.employeeId == null || 
                            _appointment.isAssignedTo(currentEmployeeId)));
                       
+                      
                       if (!canShowActions) {
                         return const SizedBox.shrink();
                       }
@@ -894,21 +924,27 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                               ),
                             // Botones para Barber
                             if (isBarber) ...[
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () => _updateStatus('Confirmed'),
-                                  icon: const Icon(Iconsax.tick_circle),
-                                  label: const Text('Confirmar Cita'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: accentColor,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                              Builder(
+                                builder: (context) {
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        _updateStatus('Confirmed');
+                                      },
+                                      icon: const Icon(Iconsax.tick_circle),
+                                      label: const Text('Confirmar Cita'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: accentColor,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                               const SizedBox(height: 12),
                               SizedBox(
@@ -930,6 +966,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                             ],
                           ],
                         );
+                      } else {
                       }
                       
                       // Botón para completar citas confirmadas

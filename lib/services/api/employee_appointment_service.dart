@@ -20,12 +20,10 @@ class EmployeeAppointmentService {
       if (date != null) queryParams['date'] = date;
       if (status != null) queryParams['status'] = status;
 
-      print('🌐 [EmployeeAppointmentService] GET /employee/appointments?${queryParams.toString()}');
       final response = await _dio.get(
         '/employee/appointments',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [EmployeeAppointmentService] Appointments response status: ${response.statusCode}');
       
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -47,14 +45,11 @@ class EmployeeAppointmentService {
       final statusCode = e.response?.statusCode;
       
       if (statusCode == 404) {
-        print('⚠️ [EmployeeAppointmentService] 404 - No hay citas disponibles');
         return [];
       }
       
-      print('❌ [EmployeeAppointmentService] Error en appointments: $statusCode');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeAppointmentService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -79,21 +74,15 @@ class EmployeeAppointmentService {
         body['serviceIds'] = serviceIds;
       }
 
-      print('🌐 [EmployeeAppointmentService] POST /employee/appointments');
-      print('📦 [EmployeeAppointmentService] Sending data: $body');
       final response = await _dio.post(
         '/employee/appointments',
         data: body,
       );
-      print('✅ [EmployeeAppointmentService] Appointment created, status: ${response.statusCode}');
       
       return AppointmentDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [EmployeeAppointmentService] Error al crear cita: ${e.response?.statusCode}');
-      print('📋 [EmployeeAppointmentService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeAppointmentService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -101,9 +90,7 @@ class EmployeeAppointmentService {
   /// Obtener una cita específica
   Future<AppointmentDto> getAppointment(int id) async {
     try {
-      print('🌐 [EmployeeAppointmentService] GET /employee/appointments/$id');
       final response = await _dio.get('/employee/appointments/$id');
-      print('✅ [EmployeeAppointmentService] Appointment retrieved, status: ${response.statusCode}');
       
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -116,11 +103,8 @@ class EmployeeAppointmentService {
       
       return AppointmentDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [EmployeeAppointmentService] Error al obtener cita: ${e.response?.statusCode}');
-      print('📋 [EmployeeAppointmentService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeAppointmentService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -146,21 +130,15 @@ class EmployeeAppointmentService {
         body['serviceIds'] = serviceIds;
       }
 
-      print('🌐 [EmployeeAppointmentService] PUT /employee/appointments/$id');
-      print('📦 [EmployeeAppointmentService] Body: $body');
       final response = await _dio.put(
         '/employee/appointments/$id',
         data: body,
       );
-      print('✅ [EmployeeAppointmentService] Appointment updated, status: ${response.statusCode}');
       
       return AppointmentDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [EmployeeAppointmentService] Error al actualizar cita: ${e.response?.statusCode}');
-      print('📋 [EmployeeAppointmentService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeAppointmentService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -168,9 +146,7 @@ class EmployeeAppointmentService {
   /// Obtener historial completo de citas (sin filtros de fecha)
   Future<List<AppointmentDto>> getHistory() async {
     try {
-      print('🌐 [EmployeeAppointmentService] GET /employee/appointments/history');
       final response = await _dio.get('/employee/appointments/history');
-      print('✅ [EmployeeAppointmentService] History response status: ${response.statusCode}');
       
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -185,7 +161,6 @@ class EmployeeAppointmentService {
         throw Exception('Respuesta inesperada: se esperaba una lista pero se recibió ${response.data.runtimeType}');
       }
       
-      print('📦 [EmployeeAppointmentService] History count: ${(response.data as List).length}');
       
       return (response.data as List)
           .map((json) => AppointmentDto.fromJson(json as Map<String, dynamic>))
@@ -194,14 +169,11 @@ class EmployeeAppointmentService {
       final statusCode = e.response?.statusCode;
       
       if (statusCode == 404) {
-        print('⚠️ [EmployeeAppointmentService] 404 - No hay historial disponible');
         return [];
       }
       
-      print('❌ [EmployeeAppointmentService] Error en history: $statusCode');
       rethrow;
     } catch (e) {
-      print('❌ [EmployeeAppointmentService] Error inesperado en history: $e');
       rethrow;
     }
   }

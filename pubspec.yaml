@@ -16,6 +16,7 @@ dependencies:
   google_fonts: ^6.2.1
   iconsax: ^0.0.8
   awesome_snackbar_content: ^0.1.7
+  badges: ^3.0.0
 
   # State Management
   flutter_riverpod: ^2.6.1

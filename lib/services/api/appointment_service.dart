@@ -19,12 +19,10 @@ class AppointmentService {
       if (date != null) queryParams['date'] = date;
       if (status != null) queryParams['status'] = status;
 
-      print('🌐 [AppointmentService] GET /barber/appointments?${queryParams.toString()}');
       final response = await _dio.get(
         '/barber/appointments',
         queryParameters: queryParams.isEmpty ? null : queryParams,
       );
-      print('✅ [AppointmentService] Appointments response status: ${response.statusCode}');
       
       // Validar que la respuesta sea JSON
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
@@ -36,15 +34,12 @@ class AppointmentService {
         );
       }
       
-      print('📦 [AppointmentService] Appointments data type: ${response.data.runtimeType}');
       if (response.data is! List) {
         throw Exception('Respuesta inesperada: se esperaba una lista pero se recibió ${response.data.runtimeType}');
       }
-      print('📦 [AppointmentService] Appointments count: ${(response.data as List).length}');
       
       // Log del primer elemento para debugging
       if ((response.data as List).isNotEmpty) {
-        print('📋 [AppointmentService] Primer elemento: ${(response.data as List).first}');
       }
       
       return (response.data as List)
@@ -52,8 +47,6 @@ class AppointmentService {
             try {
               return AppointmentDto.fromJson(json);
             } catch (e) {
-              print('❌ [AppointmentService] Error al parsear cita: $e');
-              print('📋 [AppointmentService] JSON problemático: $json');
               rethrow;
             }
           })
@@ -63,21 +56,14 @@ class AppointmentService {
       
       // Si es 404, probablemente no hay citas, retornar lista vacía
       if (statusCode == 404) {
-        print('⚠️ [AppointmentService] 404 - No hay citas disponibles o endpoint no encontrado');
-        print('📋 [AppointmentService] Retornando lista vacía');
         return [];
       }
       
-      print('❌ [AppointmentService] Error en appointments: $statusCode');
       if (e.response?.data is String && (e.response!.data as String).contains('<!DOCTYPE')) {
-        print('❌ [AppointmentService] El servidor devolvió HTML - sesión probablemente expirada');
         throw Exception('Sesión expirada. Por favor, inicia sesión nuevamente.');
       }
-      print('📋 [AppointmentService] Error data: ${e.response?.data}');
-      print('📋 [AppointmentService] Error message: ${e.message}');
       rethrow;
     } catch (e) {
-      print('❌ [AppointmentService] Error inesperado en appointments: $e');
       rethrow;
     }
   }
@@ -103,20 +89,14 @@ class AppointmentService {
         body['serviceIds'] = serviceIds;
       }
       
-      print('🌐 [AppointmentService] POST /barber/appointments');
-      print('📦 [AppointmentService] Body: $body');
       final response = await _dio.post(
         '/barber/appointments',
         data: body,
       );
-      print('✅ [AppointmentService] Appointment created, status: ${response.statusCode}');
       return AppointmentDto.fromJson(response.data);
     } on DioException catch (e) {
-      print('❌ [AppointmentService] Error al crear cita: ${e.response?.statusCode}');
-      print('📋 [AppointmentService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [AppointmentService] Error inesperado al crear cita: $e');
       rethrow;
     }
   }
@@ -124,9 +104,7 @@ class AppointmentService {
   /// Obtener una cita específica
   Future<AppointmentDto> getAppointment(int id) async {
     try {
-      print('🌐 [AppointmentService] GET /barber/appointments/$id');
       final response = await _dio.get('/barber/appointments/$id');
-      print('✅ [AppointmentService] Appointment retrieved, status: ${response.statusCode}');
       
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -139,11 +117,8 @@ class AppointmentService {
       
       return AppointmentDto.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      print('❌ [AppointmentService] Error al obtener cita: ${e.response?.statusCode}');
-      print('📋 [AppointmentService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [AppointmentService] Error inesperado: $e');
       rethrow;
     }
   }
@@ -170,20 +145,14 @@ class AppointmentService {
         body['serviceIds'] = serviceIds; // Nuevo
       }
 
-      print('🌐 [AppointmentService] PUT /barber/appointments/$id');
-      print('📦 [AppointmentService] Body: $body');
       final response = await _dio.put(
         '/barber/appointments/$id',
         data: body,
       );
-      print('✅ [AppointmentService] Appointment updated, status: ${response.statusCode}');
       return AppointmentDto.fromJson(response.data);
     } on DioException catch (e) {
-      print('❌ [AppointmentService] Error al actualizar cita: ${e.response?.statusCode}');
-      print('📋 [AppointmentService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [AppointmentService] Error inesperado al actualizar cita: $e');
       rethrow;
     }
   }
@@ -194,16 +163,11 @@ class AppointmentService {
 
   Future<Map<String, dynamic>> getWhatsAppUrl(int id) async {
     try {
-      print('🌐 [AppointmentService] GET /barber/appointments/$id/whatsapp-url');
       final response = await _dio.get('/barber/appointments/$id/whatsapp-url');
-      print('✅ [AppointmentService] WhatsApp URL obtenida, status: ${response.statusCode}');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      print('❌ [AppointmentService] Error al obtener WhatsApp URL: ${e.response?.statusCode}');
-      print('📋 [AppointmentService] Error data: ${e.response?.data}');
       rethrow;
     } catch (e) {
-      print('❌ [AppointmentService] Error inesperado al obtener WhatsApp URL: $e');
       rethrow;
     }
   }
@@ -211,9 +175,7 @@ class AppointmentService {
   /// Obtener historial completo de citas (sin filtros de fecha)
   Future<List<AppointmentDto>> getHistory() async {
     try {
-      print('🌐 [AppointmentService] GET /barber/appointments/history');
       final response = await _dio.get('/barber/appointments/history');
-      print('✅ [AppointmentService] History response status: ${response.statusCode}');
       
       if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
         throw DioException(
@@ -228,14 +190,12 @@ class AppointmentService {
         throw Exception('Respuesta inesperada: se esperaba una lista pero se recibió ${response.data.runtimeType}');
       }
       
-      print('📦 [AppointmentService] History count: ${(response.data as List).length}');
       
       return (response.data as List)
           .map((json) {
             try {
               return AppointmentDto.fromJson(json);
             } catch (e) {
-              print('❌ [AppointmentService] Error al parsear cita del historial: $e');
               rethrow;
             }
           })
@@ -244,14 +204,11 @@ class AppointmentService {
       final statusCode = e.response?.statusCode;
       
       if (statusCode == 404) {
-        print('⚠️ [AppointmentService] 404 - No hay historial disponible');
         return [];
       }
       
-      print('❌ [AppointmentService] Error en history: $statusCode');
       rethrow;
     } catch (e) {
-      print('❌ [AppointmentService] Error inesperado en history: $e');
       rethrow;
     }
   }

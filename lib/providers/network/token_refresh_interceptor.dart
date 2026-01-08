@@ -100,11 +100,9 @@ class TokenRefreshInterceptor extends Interceptor {
       final refreshToken = await _tokenStorage.getRefreshToken();
 
       if (refreshToken == null || refreshToken.isEmpty) {
-        print('⚠️ [TokenRefresh] No hay refresh token disponible');
         return null;
       }
 
-      print('🔄 [TokenRefresh] Intentando refrescar token...');
       final response = await _refreshDio.post(
         '/auth/refresh',
         data: {
@@ -121,7 +119,6 @@ class TokenRefreshInterceptor extends Interceptor {
         final newRefreshToken = response.data['refreshToken'] as String?;
         
         if (newToken != null && newToken.isNotEmpty) {
-          print('✅ [TokenRefresh] Token refrescado exitosamente');
           return {
             'accessToken': newToken,
             'refreshToken': newRefreshToken ?? newToken, // Si no hay nuevo refreshToken, usar el mismo
@@ -129,10 +126,8 @@ class TokenRefreshInterceptor extends Interceptor {
         }
       }
 
-      print('⚠️ [TokenRefresh] Respuesta de refresh no válida: ${response.statusCode}');
       return null;
     } catch (e) {
-      print('❌ [TokenRefresh] Error al refrescar token: $e');
       // Error al refrescar (token inválido, expirado, etc.)
       return null;
     }

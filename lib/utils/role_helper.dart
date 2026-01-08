@@ -58,4 +58,3 @@ class RoleHelper {
     return null;
   }
 }
-

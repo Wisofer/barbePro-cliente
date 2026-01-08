@@ -10,6 +10,7 @@ import '../../utils/role_helper.dart';
 import '../../utils/jwt_decoder.dart';
 import '../../utils/money_formatter.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/pending_appointments_provider.dart';
 import 'create_appointment_screen.dart';
 import 'appointment_detail_screen.dart';
 
@@ -30,6 +31,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
   void initState() {
     super.initState();
     _loadAppointments();
+    // Actualizar contador de pendientes al entrar a la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(pendingAppointmentsProvider.notifier).refresh();
+    });
   }
 
   Future<void> _loadAppointments() async {
@@ -38,7 +43,6 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
       _errorMessage = null;
     });
     try {
-      print('🔵 [Appointments] Cargando citas...');
       
       // Configurar filtros según el tab seleccionado
       String? date;
@@ -69,13 +73,14 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         );
       }
       
-      print('✅ [Appointments] Citas cargadas: ${appointments.length}');
       if (mounted) {
         setState(() {
           _appointments = appointments;
           _isLoading = false;
           _errorMessage = null;
         });
+        // Actualizar contador de pendientes
+        ref.read(pendingAppointmentsProvider.notifier).refresh();
       }
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
@@ -84,7 +89,6 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
       // Si es 404, el servicio ya retornó lista vacía, así que no deberíamos llegar aquí
       // Pero por si acaso, manejamos el caso
       if (statusCode == 404) {
-        print('⚠️ [Appointments] 404 - No hay citas disponibles');
         if (mounted) {
           setState(() {
             _appointments = [];
@@ -104,8 +108,6 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         message = e.message ?? 'Error desconocido';
       }
       
-      print('❌ [Appointments] Error HTTP: $statusCode');
-      print('📋 [Appointments] Error data: $errorData');
       
       if (mounted) {
         setState(() {
@@ -114,8 +116,6 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         });
       }
     } catch (e, stackTrace) {
-      print('❌ [Appointments] Error al cargar: $e');
-      print('📋 [Appointments] StackTrace: $stackTrace');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -129,12 +129,26 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 360;
+    final isMediumScreen = size.width >= 360 && size.width < 600;
+    
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
     final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
     final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF0FDF4);
     const accentColor = Color(0xFF10B981);
+
+    // Valores responsive
+    final double horizontalPadding = isSmallScreen ? 16 : (isMediumScreen ? 18 : 20);
+    final double verticalSpacing = isSmallScreen ? 10 : 12;
+    final double titleFontSize = isSmallScreen ? 20 : (isMediumScreen ? 22 : 24);
+    final double subtitleFontSize = isSmallScreen ? 11 : 12;
+    final double iconSize = isSmallScreen ? 32 : 36;
+    final double iconInnerSize = isSmallScreen ? 16 : 18;
+    final double listPadding = isSmallScreen ? 12 : 16;
+    final double cardSpacing = isSmallScreen ? 10 : 12;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -143,33 +157,34 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
           children: [
             // Header limpio
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: EdgeInsets.fromLTRB(horizontalPadding, isSmallScreen ? 12 : 16, horizontalPadding, verticalSpacing),
               child: Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Citas',
-                        style: GoogleFonts.inter(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                          height: 1.2,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Citas',
+                          style: GoogleFonts.inter(
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                            height: 1.2,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _selectedTab == 0 ? 'Citas de hoy' : 'Citas pendientes',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: mutedColor,
-                          fontWeight: FontWeight.w400,
+                        SizedBox(height: isSmallScreen ? 1 : 2),
+                        Text(
+                          _selectedTab == 0 ? 'Citas de hoy' : 'Citas pendientes',
+                          style: GoogleFonts.inter(
+                            fontSize: subtitleFontSize,
+                            color: mutedColor,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const Spacer(),
                   // Icono de historial
                   Material(
                     color: Colors.transparent,
@@ -184,8 +199,8 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                       },
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: iconSize,
+                        height: iconSize,
                         decoration: BoxDecoration(
                           color: mutedColor.withAlpha(15),
                           borderRadius: BorderRadius.circular(10),
@@ -193,12 +208,12 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                         child: Icon(
                           Iconsax.document_text,
                           color: textColor,
-                          size: 18,
+                          size: iconInnerSize,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: isSmallScreen ? 8 : 10),
                   // Botón agregar cita
                   Material(
                     color: Colors.transparent,
@@ -216,8 +231,8 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                       },
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: iconSize,
+                        height: iconSize,
                         decoration: BoxDecoration(
                           color: accentColor.withAlpha(15),
                           borderRadius: BorderRadius.circular(10),
@@ -225,7 +240,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                         child: Icon(
                           Iconsax.add,
                           color: accentColor,
-                          size: 18,
+                          size: iconInnerSize,
                         ),
                       ),
                     ),
@@ -236,7 +251,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
 
             // Tabs estilo línea inferior
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: _LineTabBar(
                 selectedIndex: _selectedTab,
                 onTabSelected: (index) {
@@ -247,9 +262,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                 accentColor: accentColor,
                 textColor: textColor,
                 mutedColor: mutedColor,
+                isSmallScreen: isSmallScreen,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: verticalSpacing),
 
             // Lista de citas
             Expanded(
@@ -262,6 +278,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                           textColor: textColor,
                           mutedColor: mutedColor,
                           accentColor: accentColor,
+                          isSmallScreen: isSmallScreen,
                         )
                       : _appointments.isEmpty
                           ? _EmptyState(
@@ -280,17 +297,18 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                               textColor: textColor,
                               mutedColor: mutedColor,
                               accentColor: accentColor,
+                              isSmallScreen: isSmallScreen,
                             )
                           : RefreshIndicator(
                               onRefresh: _loadAppointments,
                               color: accentColor,
                               child: ListView.builder(
-                                padding: const EdgeInsets.all(16),
+                                padding: EdgeInsets.all(listPadding),
                                 itemCount: _appointments.length,
                                 itemBuilder: (context, index) {
                                   final apt = _appointments[index];
                                   return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
+                                    padding: EdgeInsets.only(bottom: cardSpacing),
                                     child: _AppointmentCard(
                                       appointment: apt,
                                       textColor: textColor,
@@ -298,6 +316,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                                       cardColor: cardColor,
                                       borderColor: borderColor,
                                       accentColor: accentColor,
+                                      isSmallScreen: isSmallScreen,
                                       onTap: () async {
                                         final result = await Navigator.push(
                                           context,
@@ -331,6 +350,7 @@ class _LineTabBar extends StatefulWidget {
   final Color accentColor;
   final Color textColor;
   final Color mutedColor;
+  final bool isSmallScreen;
 
   const _LineTabBar({
     required this.selectedIndex,
@@ -339,6 +359,7 @@ class _LineTabBar extends StatefulWidget {
     required this.accentColor,
     required this.textColor,
     required this.mutedColor,
+    this.isSmallScreen = false,
   });
 
   @override
@@ -388,19 +409,19 @@ class _LineTabBarState extends State<_LineTabBar> with SingleTickerProviderState
                 onTap: () => widget.onTabSelected(index),
                 behavior: HitTestBehavior.opaque,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: EdgeInsets.symmetric(vertical: widget.isSmallScreen ? 8 : 10),
                   child: Column(
                     children: [
                       Text(
                         label,
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: widget.isSmallScreen ? 13 : 14,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                           color: isSelected ? widget.textColor : widget.mutedColor,
                           letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: widget.isSmallScreen ? 5 : 6),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeInOut,
@@ -428,6 +449,7 @@ class _EmptyState extends StatelessWidget {
   final Color textColor;
   final Color mutedColor;
   final Color accentColor;
+  final bool isSmallScreen;
 
   const _EmptyState({
     required this.selectedTab,
@@ -435,6 +457,7 @@ class _EmptyState extends StatelessWidget {
     required this.textColor,
     required this.mutedColor,
     required this.accentColor,
+    this.isSmallScreen = false,
   });
 
   @override
@@ -509,6 +532,7 @@ class _ErrorState extends StatelessWidget {
   final Color textColor;
   final Color mutedColor;
   final Color accentColor;
+  final bool isSmallScreen;
 
   const _ErrorState({
     required this.errorMessage,
@@ -516,45 +540,60 @@ class _ErrorState extends StatelessWidget {
     required this.textColor,
     required this.mutedColor,
     required this.accentColor,
+    this.isSmallScreen = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double horizontalPadding = isSmallScreen ? 24 : 40;
+    final double verticalPadding = isSmallScreen ? 40 : 60;
+    final double iconSize = isSmallScreen ? 48 : 56;
+    final double titleFontSize = isSmallScreen ? 16 : 18;
+    final double subtitleFontSize = isSmallScreen ? 12 : 13;
+    
     return SingleChildScrollView(
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Iconsax.warning_2, color: const Color(0xFFEF4444), size: 56),
-              const SizedBox(height: 20),
+              Icon(Iconsax.warning_2, color: const Color(0xFFEF4444), size: iconSize),
+              SizedBox(height: isSmallScreen ? 16 : 20),
               Text(
                 'Error al cargar',
                 style: GoogleFonts.inter(
-                  fontSize: 18,
+                  fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: textColor,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: isSmallScreen ? 4 : 6),
               Text(
                 errorMessage,
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: subtitleFontSize,
                   color: mutedColor,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: isSmallScreen ? 16 : 20),
               ElevatedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Iconsax.refresh, size: 18),
-                label: const Text('Reintentar'),
+                icon: Icon(Iconsax.refresh, size: isSmallScreen ? 16 : 18),
+                label: Text(
+                  'Reintentar',
+                  style: GoogleFonts.inter(
+                    fontSize: isSmallScreen ? 14 : 15,
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 16 : 20,
+                    vertical: isSmallScreen ? 10 : 12,
+                  ),
                 ),
               ),
             ],
@@ -573,6 +612,7 @@ class _AppointmentCard extends ConsumerWidget {
   final Color borderColor;
   final Color accentColor;
   final VoidCallback onTap;
+  final bool isSmallScreen;
 
   const _AppointmentCard({
     required this.appointment,
@@ -582,6 +622,7 @@ class _AppointmentCard extends ConsumerWidget {
     required this.borderColor,
     required this.accentColor,
     required this.onTap,
+    this.isSmallScreen = false,
   });
 
   Color _getStatusColor(String status) {
@@ -631,6 +672,7 @@ class _AppointmentCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isSmall = isSmallScreen;
     final statusColor = _getStatusColor(appointment.status);
     final dateTime = appointment.dateTime;
     final isToday = dateTime.year == DateTime.now().year &&
@@ -666,15 +708,15 @@ class _AppointmentCard extends ConsumerWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(isSmall ? 12 : 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: isSmall ? 36 : 40,
+                    height: isSmall ? 36 : 40,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -689,10 +731,10 @@ class _AppointmentCard extends ConsumerWidget {
                     child: Icon(
                       Iconsax.calendar_2,
                       color: Colors.white,
-                      size: 20,
+                      size: isSmall ? 18 : 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: isSmall ? 10 : 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,12 +742,12 @@ class _AppointmentCard extends ConsumerWidget {
                         Text(
                           appointment.clientName,
                           style: GoogleFonts.inter(
-                            fontSize: 16,
+                            fontSize: isSmall ? 14 : 16,
                             fontWeight: FontWeight.w700,
                             color: textColor,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: isSmall ? 2 : 3),
                         // Mostrar todos los servicios o el primero si no hay lista
                         if (appointment.services.isNotEmpty)
                           Wrap(
@@ -753,13 +795,13 @@ class _AppointmentCard extends ConsumerWidget {
                         else if (appointment.serviceName != null && appointment.serviceName!.isNotEmpty)
                           Row(
                             children: [
-                              Icon(Iconsax.scissor, size: 12, color: mutedColor),
-                              const SizedBox(width: 5),
+                              Icon(Iconsax.scissor, size: isSmall ? 11 : 12, color: mutedColor),
+                              SizedBox(width: isSmall ? 4 : 5),
                               Expanded(
-                              child: Text(
-                                appointment.serviceName ?? '',
+                                child: Text(
+                                  appointment.serviceName ?? '',
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
+                                    fontSize: isSmall ? 11 : 12,
                                     color: mutedColor,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -771,7 +813,7 @@ class _AppointmentCard extends ConsumerWidget {
                           Text(
                             'Sin servicio',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: isSmall ? 11 : 12,
                               color: mutedColor,
                             ),
                           ),
@@ -779,7 +821,10 @@ class _AppointmentCard extends ConsumerWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmall ? 8 : 10,
+                      vertical: isSmall ? 4 : 5,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withAlpha(25),
                       borderRadius: BorderRadius.circular(18),
@@ -789,7 +834,7 @@ class _AppointmentCard extends ConsumerWidget {
                       children: [
                         Icon(
                           _getStatusIcon(appointment.status),
-                          size: 12,
+                          size: isSmall ? 11 : 12,
                           color: statusColor,
                         ),
                         const SizedBox(width: 5),
@@ -806,9 +851,9 @@ class _AppointmentCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isSmall ? 10 : 12),
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(isSmall ? 8 : 10),
                 decoration: BoxDecoration(
                   color: accentColor.withAlpha(10),
                   borderRadius: BorderRadius.circular(8),
@@ -816,7 +861,7 @@ class _AppointmentCard extends ConsumerWidget {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: EdgeInsets.all(isSmall ? 5 : 6),
                       decoration: BoxDecoration(
                         color: accentColor.withAlpha(20),
                         borderRadius: BorderRadius.circular(6),
@@ -824,10 +869,10 @@ class _AppointmentCard extends ConsumerWidget {
                       child: Icon(
                         Iconsax.clock,
                         color: accentColor,
-                        size: 16,
+                        size: isSmall ? 14 : 16,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: isSmall ? 8 : 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -835,16 +880,16 @@ class _AppointmentCard extends ConsumerWidget {
                           Text(
                             isToday ? 'Hoy' : _formatDate(appointment.date),
                             style: GoogleFonts.inter(
-                              fontSize: 13,
+                              fontSize: isSmall ? 12 : 13,
                               fontWeight: FontWeight.w600,
                               color: textColor,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: isSmall ? 1 : 2),
                           Text(
                             appointment.time,
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: isSmall ? 11 : 12,
                               color: mutedColor,
                             ),
                           ),
@@ -852,7 +897,10 @@ class _AppointmentCard extends ConsumerWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmall ? 8 : 10,
+                        vertical: isSmall ? 5 : 6,
+                      ),
                       decoration: BoxDecoration(
                         color: accentColor.withAlpha(20),
                         borderRadius: BorderRadius.circular(6),
@@ -860,12 +908,12 @@ class _AppointmentCard extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Iconsax.dollar_circle, size: 14, color: accentColor),
-                          const SizedBox(width: 4),
+                          Icon(Iconsax.dollar_circle, size: isSmall ? 12 : 14, color: accentColor),
+                          SizedBox(width: isSmall ? 3 : 4),
                           Text(
                             MoneyFormatter.formatCordobas(_getTotalPrice(appointment)),
                             style: GoogleFonts.inter(
-                              fontSize: 13,
+                              fontSize: isSmall ? 13 : 16,
                               fontWeight: FontWeight.w700,
                               color: accentColor,
                             ),

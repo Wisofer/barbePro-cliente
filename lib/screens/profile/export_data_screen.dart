@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
@@ -64,7 +65,32 @@ class _ExportDataScreenState extends ConsumerState<ExportDataScreen> {
         );
       }
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? 'Error al exportar el reporte';
+      String message = 'Error al exportar el reporte';
+      
+      // Manejar diferentes tipos de respuesta de error
+      if (e.response?.data != null) {
+        try {
+          // Si data es una lista de bytes (Uint8List), decodificarla
+          if (e.response!.data is List<int>) {
+            final bytes = e.response!.data as List<int>;
+            final jsonString = utf8.decode(bytes);
+            final jsonData = json.decode(jsonString);
+            message = jsonData['message'] ?? message;
+          } 
+          // Si data es un Map, extraer el mensaje directamente
+          else if (e.response!.data is Map) {
+            message = e.response!.data['message'] ?? message;
+          }
+          // Si data es un String, usarlo directamente
+          else if (e.response!.data is String) {
+            message = e.response!.data;
+          }
+        } catch (decodeError) {
+          // Si falla la decodificación, usar mensaje por defecto
+          message = 'Error del servidor. Por favor, intenta más tarde.';
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _isExporting = false;
@@ -74,6 +100,7 @@ class _ExportDataScreenState extends ConsumerState<ExportDataScreen> {
           SnackBar(
             content: Text(message),
             backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -87,6 +114,7 @@ class _ExportDataScreenState extends ConsumerState<ExportDataScreen> {
           SnackBar(
             content: Text('Error: ${e.toString()}'),
             backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 4),
           ),
         );
       }

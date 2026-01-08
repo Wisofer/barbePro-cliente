@@ -71,8 +71,6 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
         message = e.message ?? 'Error desconocido';
       }
       
-      print('❌ [Income] Error HTTP: $statusCode');
-      print('📋 [Income] Error data: $errorData');
       
       if (mounted) {
         setState(() {

@@ -14,9 +14,6 @@ class ErrorInterceptor extends Interceptor {
     
     // Log en modo debug (solo si no es un 404 esperado)
     if (kDebugMode && !isExpected404) {
-      print('🌐 [ERROR INTERCEPTOR] ${err.requestOptions.method} ${err.requestOptions.path}');
-      print('🌐 [ERROR INTERCEPTOR] Status: ${err.response?.statusCode}');
-      print('🌐 [ERROR INTERCEPTOR] Message: $userFriendlyMessage');
     }
     
     // Crear un nuevo error con mensaje traducido
@@ -132,7 +129,6 @@ class ErrorInterceptor extends Interceptor {
       
       // Solo loguear si no es 200/201/204 (para reducir ruido)
       if (statusCode != null && statusCode >= 300) {
-        print('🌐 [RESPONSE] $method $path - Status: $statusCode');
       }
     }
     

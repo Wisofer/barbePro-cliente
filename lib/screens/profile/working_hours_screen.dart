@@ -43,10 +43,8 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
     });
 
     try {
-      print('🔵 [WorkingHours] Cargando horarios...');
       final service = ref.read(barberServiceProvider);
       final workingHours = await service.getWorkingHours();
-      print('✅ [WorkingHours] Horarios cargados: ${workingHours.length}');
 
       // Inicializar todos los días (0-6)
       final schedules = <int, _DaySchedule>{};
@@ -109,7 +107,6 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
         }
       }
     } catch (e) {
-      print('❌ [WorkingHours] Error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -133,9 +130,7 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
         'isActive': schedule.isActive,
       }).toList().cast<Map<String, dynamic>>();
 
-      print('💾 [WorkingHours] Guardando horarios...');
       await service.updateWorkingHours(workingHours);
-      print('✅ [WorkingHours] Horarios guardados exitosamente');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,8 +159,6 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
         message = 'Datos inválidos. Verifica los horarios ingresados.';
       }
       
-      print('❌ [WorkingHours] Error HTTP: $statusCode');
-      print('📋 [WorkingHours] Error message: $message');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -177,8 +170,6 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
         );
       }
     } catch (e, stackTrace) {
-      print('❌ [WorkingHours] Error inesperado: $e');
-      print('📋 [WorkingHours] StackTrace: $stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
