@@ -440,7 +440,17 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
         ),
         title: Row(
           children: [
-            Icon(Iconsax.message, color: const Color(0xFF10B981), size: 24),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF25D366).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                '💬',
+                style: TextStyle(fontSize: 26),
+              ),
+            ),
             const SizedBox(width: 12),
             const Text(
               'Enviar confirmación',
@@ -485,17 +495,54 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
       final whatsappData = await service.getWhatsAppUrl(_appointment.id);
       
       final url = whatsappData['url'] as String;
+      final uri = Uri.parse(url);
       
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudo abrir WhatsApp'),
-              backgroundColor: Color(0xFFEF4444),
-            ),
-          );
+      // Intentar abrir WhatsApp directamente
+      try {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (e) {
+        // Si falla con externalApplication, intentar con platformDefault
+        try {
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+        } catch (e2) {
+          // Si también falla, intentar con la URL web de WhatsApp
+          if (url.contains('whatsapp://')) {
+            // Convertir whatsapp:// a https://wa.me/
+            final phoneMatch = RegExp(r'phone=([0-9]+)').firstMatch(url);
+            final textMatch = RegExp(r'text=([^&]+)').firstMatch(url);
+            
+            if (phoneMatch != null) {
+              String webUrl = 'https://wa.me/${phoneMatch.group(1)}';
+              if (textMatch != null) {
+                final encodedText = Uri.encodeComponent(textMatch.group(1)!);
+                webUrl += '?text=$encodedText';
+              }
+              
+              try {
+                await launchUrl(
+                  Uri.parse(webUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+                return;
+              } catch (e3) {
+                // Continuar con el error original
+              }
+            }
+          }
+          
+          // Si todo falla, mostrar error
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('No se pudo abrir WhatsApp. Asegúrate de tener WhatsApp instalado.'),
+                backgroundColor: const Color(0xFFEF4444),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -504,6 +551,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
           SnackBar(
             content: Text('Error al obtener URL de WhatsApp: ${e.toString()}'),
             backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
