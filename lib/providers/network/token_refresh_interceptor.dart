@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:system_movil/services/storage/token_storage.dart';
-import 'package:system_movil/services/api/api_config.dart';
+import '../../services/storage/token_storage.dart';
+import '../../services/api/api_config.dart';
 
 /// Interceptor que maneja el refresh automático de tokens cuando se recibe un 401
 /// Similar al comportamiento de Facebook, LinkedIn, etc.
@@ -97,17 +97,17 @@ class TokenRefreshInterceptor extends Interceptor {
   /// Intenta refrescar el token usando el refresh token
   Future<Map<String, String>?> _refreshToken() async {
     try {
-      final accessToken = await _tokenStorage.getAccessToken();
       final refreshToken = await _tokenStorage.getRefreshToken();
 
-      if (accessToken == null || refreshToken == null) {
+      if (refreshToken == null || refreshToken.isEmpty) {
+        print('⚠️ [TokenRefresh] No hay refresh token disponible');
         return null;
       }
 
+      print('🔄 [TokenRefresh] Intentando refrescar token...');
       final response = await _refreshDio.post(
         '/auth/refresh',
         data: {
-          'accessToken': accessToken,
           'refreshToken': refreshToken,
         },
         options: Options(
@@ -116,17 +116,23 @@ class TokenRefreshInterceptor extends Interceptor {
       );
 
       if (response.statusCode == 200 && response.data != null) {
-        final result = response.data['result'];
-        if (result != null) {
+        // El backend devuelve: { "token": "...", "refreshToken": "...", "user": {...}, "role": "..." }
+        final newToken = response.data['token'] as String?;
+        final newRefreshToken = response.data['refreshToken'] as String?;
+        
+        if (newToken != null && newToken.isNotEmpty) {
+          print('✅ [TokenRefresh] Token refrescado exitosamente');
           return {
-            'accessToken': result['accessToken'],
-            'refreshToken': result['refreshToken'],
+            'accessToken': newToken,
+            'refreshToken': newRefreshToken ?? newToken, // Si no hay nuevo refreshToken, usar el mismo
           };
         }
       }
 
+      print('⚠️ [TokenRefresh] Respuesta de refresh no válida: ${response.statusCode}');
       return null;
     } catch (e) {
+      print('❌ [TokenRefresh] Error al refrescar token: $e');
       // Error al refrescar (token inválido, expirado, etc.)
       return null;
     }

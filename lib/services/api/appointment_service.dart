@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/appointment.dart';
 import '../../providers/providers.dart';
+import '../../providers/auth_provider.dart';
+import '../demo/mock_appointment_service.dart';
 
 class AppointmentService {
   final Dio _dio;
@@ -205,9 +207,65 @@ class AppointmentService {
       rethrow;
     }
   }
+
+  /// Obtener historial completo de citas (sin filtros de fecha)
+  Future<List<AppointmentDto>> getHistory() async {
+    try {
+      print('🌐 [AppointmentService] GET /barber/appointments/history');
+      final response = await _dio.get('/barber/appointments/history');
+      print('✅ [AppointmentService] History response status: ${response.statusCode}');
+      
+      if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message: 'El servidor devolvió HTML. Posible sesión expirada o token inválido.',
+        );
+      }
+      
+      if (response.data is! List) {
+        throw Exception('Respuesta inesperada: se esperaba una lista pero se recibió ${response.data.runtimeType}');
+      }
+      
+      print('📦 [AppointmentService] History count: ${(response.data as List).length}');
+      
+      return (response.data as List)
+          .map((json) {
+            try {
+              return AppointmentDto.fromJson(json);
+            } catch (e) {
+              print('❌ [AppointmentService] Error al parsear cita del historial: $e');
+              rethrow;
+            }
+          })
+          .toList();
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      
+      if (statusCode == 404) {
+        print('⚠️ [AppointmentService] 404 - No hay historial disponible');
+        return [];
+      }
+      
+      print('❌ [AppointmentService] Error en history: $statusCode');
+      rethrow;
+    } catch (e) {
+      print('❌ [AppointmentService] Error inesperado en history: $e');
+      rethrow;
+    }
+  }
 }
 
-final appointmentServiceProvider = Provider<AppointmentService>((ref) {
+// Provider que devuelve AppointmentService o MockAppointmentService según el modo
+final appointmentServiceProvider = Provider<dynamic>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  
+  // Si está en modo demo, usar servicio mock
+  if (authState.isDemoMode) {
+    return MockAppointmentService();
+  }
+  
   final dio = ref.watch(dioProvider);
   return AppointmentService(dio);
 });

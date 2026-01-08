@@ -1,6 +1,11 @@
+import 'package:intl/intl.dart';
+
 /// Utilidades para formatear valores monetarios redondeados a enteros
 /// Todos los valores monetarios se redondean a números enteros sin decimales
+/// Formato nicaragüense: separadores de miles con coma (21,000)
 class MoneyFormatter {
+  // Formateador de números con separadores de miles (formato nicaragüense)
+  static final _numberFormat = NumberFormat('#,###', 'es_NI');
   /// Redondea un valor double a entero
   /// Ejemplo: 120.76 -> 121, 120.24 -> 120
   static int roundToInt(double value) {
@@ -13,14 +18,21 @@ class MoneyFormatter {
     return value.round().toDouble();
   }
 
-  /// Formatea un valor como string sin decimales
-  /// Ejemplo: 120.76 -> "121", 120.24 -> "120"
-  static String format(double value) {
-    return roundToInt(value).toString();
+  /// Formatea un número con separadores de miles (formato nicaragüense)
+  /// Ejemplo: 500 -> "500", 1500 -> "1,500", 21000 -> "21,000", 1234567 -> "1,234,567"
+  static String formatWithThousands(int value) {
+    return _numberFormat.format(value);
   }
 
-  /// Formatea un valor con símbolo de córdobas (C$)
-  /// Ejemplo: 120.76 -> "C$121"
+  /// Formatea un valor como string sin decimales con separadores de miles
+  /// Ejemplo: 120.76 -> "121", 1200.24 -> "1,200", 21000 -> "21,000"
+  static String format(double value) {
+    final rounded = roundToInt(value);
+    return formatWithThousands(rounded);
+  }
+
+  /// Formatea un valor con símbolo de córdobas (C$) y separadores de miles
+  /// Ejemplo: 120.76 -> "C$121", 1200.24 -> "C$1,200", 21000 -> "C$21,000"
   static String formatCordobas(double value) {
     return 'C\$${format(value)}';
   }

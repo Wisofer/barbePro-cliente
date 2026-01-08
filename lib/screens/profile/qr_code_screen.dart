@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,8 @@ import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import '../../models/barber.dart';
 import '../../models/auth.dart';
@@ -60,23 +64,52 @@ class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
 
   Future<void> _shareQr() async {
     if (_qrData == null) return;
-    await Share.share(
-      'Escanea este código QR para agendar tu cita con ${widget.profile.name}\n\n${_qrData!.url}',
-      subject: 'Código QR - ${widget.profile.businessName ?? widget.profile.name}',
-    );
-  }
-
-  Future<void> _copyUrl() async {
-    if (_qrData == null) return;
-    await Clipboard.setData(ClipboardData(text: _qrData!.url));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('URL copiada al portapapeles'),
-          backgroundColor: Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-        ),
+    
+    try {
+      // Decodificar el Base64 del QR
+      final base64String = _qrData!.qrCode;
+      
+      // Remover el prefijo "data:image/png;base64," si existe
+      final cleanBase64 = base64String.contains(',') 
+          ? base64String.split(',').last 
+          : base64String;
+      
+      // Decodificar Base64 a bytes
+      final bytes = base64Decode(cleanBase64);
+      
+      // Obtener directorio temporal
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/qr_code_${DateTime.now().millisecondsSinceEpoch}.png');
+      
+      // Escribir el archivo
+      await file.writeAsBytes(bytes);
+      
+      // Crear XFile para compartir
+      final xFile = XFile(file.path);
+      
+      // Texto del mensaje
+      final message = 'Escanea este código QR para agendar tu cita con ${widget.profile.name}\n\n${_qrData!.url}';
+      
+      // Compartir la imagen PNG con el mensaje
+      await Share.shareXFiles(
+        [xFile],
+        text: message,
+        subject: 'Código QR - ${widget.profile.businessName ?? widget.profile.name}',
       );
+      
+      // Limpiar archivo temporal después de compartir (opcional, se limpia automáticamente)
+      // await file.delete();
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir el QR: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -240,34 +273,18 @@ class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Botones de acción
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _copyUrl,
-                              icon: const Icon(Iconsax.copy, size: 18),
-                              label: const Text('Copiar URL'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: BorderSide(color: accentColor),
-                                foregroundColor: accentColor,
-                              ),
-                            ),
+                      // Botón de compartir
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _shareQr,
+                          icon: const Icon(Iconsax.send_2, size: 18),
+                          label: const Text('Compartir'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accentColor,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _shareQr,
-                              icon: const Icon(Iconsax.send_2, size: 18),
-                              label: const Text('Compartir'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: accentColor,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

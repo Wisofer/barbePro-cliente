@@ -1,4 +1,4 @@
-package com.emsinet.systemmovil
+package com.barbenic.app
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -10,7 +10,7 @@ class MainActivity : FlutterActivity() {
 
 		MethodChannel(
 			flutterEngine.dartExecutor.binaryMessenger,
-			"com.emsinet.systemmovil/timezone"
+			"com.barbenic.app/timezone"
 		).setMethodCallHandler { call, result ->
 			when (call.method) {
 				"getLocalTimezone" -> {

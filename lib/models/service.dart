@@ -1,3 +1,5 @@
+import '../utils/money_formatter.dart';
+
 class ServiceDto {
   final int id;
   final String name;
@@ -29,7 +31,11 @@ class ServiceDto {
         'isActive': isActive,
       };
 
-  String get formattedPrice => 'C\$${price.toStringAsFixed(2)}';
+  String get formattedPrice {
+    // Usar MoneyFormatter para formato con separadores de miles
+    final rounded = price.round();
+    return 'C\$${MoneyFormatter.formatWithThousands(rounded)}';
+  }
   String get formattedDuration {
     if (durationMinutes < 60) {
       return '$durationMinutes min';

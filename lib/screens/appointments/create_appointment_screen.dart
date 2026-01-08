@@ -99,9 +99,12 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   }
 
   Future<void> _selectTime() async {
+    // Usar modo input para permitir cualquier minuto (00-59)
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: _selectedTime ?? TimeOfDay.now(),
+      initialEntryMode: TimePickerEntryMode.input, // Permite entrada manual de cualquier minuto
+      helpText: 'Selecciona la hora (permite cualquier minuto)',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(

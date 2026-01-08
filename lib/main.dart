@@ -34,7 +34,7 @@ class SystemMovilApp extends StatelessWidget {
       builder: (context, ref, child) {
         final settings = ref.watch(settingsNotifierProvider);
         return MaterialApp(
-          title: 'BarberPro',
+          title: 'BarbeNic',
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: settings.themeMode,

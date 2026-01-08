@@ -14,17 +14,20 @@ class LoginRequest {
 
 class LoginResponse {
   final String token;
+  final String refreshToken;
   final UserDto user;
   final String role;
 
   LoginResponse({
     required this.token,
+    required this.refreshToken,
     required this.user,
     required this.role,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) => LoginResponse(
-        token: json['token'],
+        token: json['token'] ?? '',
+        refreshToken: json['refreshToken'] ?? json['token'] ?? '', // Fallback al token si no hay refreshToken
         user: UserDto.fromJson(json['user']),
         role: json['role'],
       );

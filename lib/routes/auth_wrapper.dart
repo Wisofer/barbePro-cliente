@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../screens/auth/login.dart';
 import '../screens/home_screen.dart';
-import '../main_theme.dart';
+import '../widgets/splash_screen.dart';
 
 class AuthWrapper extends StatefulWidget {
   static const String routeName = '/auth-wrapper';
@@ -42,7 +42,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     // Mostrar splash por tiempo fijo independientemente del AuthProvider
     if (_showSplash) {
-      return const _SplashScreen();
+      return const SplashScreen();
     }
 
     return Consumer(
@@ -51,7 +51,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         
         // Si aún no se ha inicializado, mostrar splash
         if (!authState.isInitialized) {
-          return const _SplashScreen();
+          return const SplashScreen();
         }
 
         // Si está autenticado, ir al home
@@ -62,58 +62,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // Si no está autenticado, mostrar login
         return const LoginScreen();
       },
-    );
-  }
-}
-
-/// Splash screen simple
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SystemMovilColors.primary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo o icono de la app
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.apps_rounded,
-                size: 60,
-                color: SystemMovilColors.primary,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'System Movil',
-              style: SystemMovilTypography.h1.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

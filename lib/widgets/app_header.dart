@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../main_theme.dart';
-import 'profile_menu.dart';
 
 class AppHeader extends ConsumerWidget {
   const AppHeader({super.key});
@@ -86,7 +85,7 @@ class AppHeader extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'BarberPro',
+                        'BarbeNic',
                         style: GoogleFonts.inter(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -106,61 +105,6 @@ class AppHeader extends ConsumerWidget {
                         ),
                       ),
                     ],
-                  ),
-                ),
-                
-                // Botón de perfil con notificación
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => ProfileMenu.show(context, ref),
-                    borderRadius: BorderRadius.circular(11),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                            borderRadius: BorderRadius.circular(11),
-                            border: Border.all(
-                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Iconsax.user,
-                            color: accentColor,
-                            size: 20,
-                          ),
-                        ),
-                        // Indicador de estado activo
-                        Positioned(
-                          top: -2,
-                          right: -2,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: accentColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ],

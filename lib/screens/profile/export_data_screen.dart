@@ -60,7 +60,7 @@ class _ExportDataScreenState extends ConsumerState<ExportDataScreen> {
         // Compartir archivo
         await Share.shareXFiles(
           [XFile(file.path)],
-          text: 'Reporte $type - BarberPro',
+          text: 'Reporte $type - BarbeNic',
         );
       }
     } on DioException catch (e) {

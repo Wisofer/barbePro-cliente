@@ -1,6 +1,6 @@
 {
-    "name": "System Movil",
-    "short_name": "System Movil",
+    "name": "BarbeNic",
+    "short_name": "BarbeNic",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",

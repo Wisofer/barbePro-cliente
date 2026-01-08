@@ -1,5 +1,5 @@
 class ApiConfig {
-  // URL base del backend - API BarberPro
+  // URL base del backend - API BarbeNic
   static const String baseUrl = 'https://barbepro.encuentrame.org/api';
   
   // Timeouts

@@ -20,7 +20,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.emsinet.systemmovil"
+    namespace = "com.barbenic.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -35,8 +35,8 @@ android {
     }
 
     defaultConfig {
-        // Application ID único para EMSINET System Movil
-        applicationId = "com.emsinet.systemmovil"
+        // Application ID único para EMSINET BarbeNic
+        applicationId = "com.barbenic.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

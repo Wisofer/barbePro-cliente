@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../main_theme.dart';
 import '../../services/storage/credentials_storage.dart';
@@ -110,10 +111,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     }
   }
 
+  Future<void> _enterDemoMode() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authNotifier = ref.read(authNotifierProvider.notifier);
+      await authNotifier.enableDemoMode();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al entrar en modo demo: ${e.toString()}';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     const accentColor = Color(0xFF10B981); // Verde barbero
+    
+    // Variables responsive
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final isSmallScreen = screenWidth < 360;
+    final isMediumScreen = screenWidth >= 360 && screenWidth < 600;
+    
+    // Tamaños responsive
+    final titleFontSize = isSmallScreen ? 24.0 : (isMediumScreen ? 26.0 : 28.0);
+    final subtitleFontSize = isSmallScreen ? 12.0 : 14.0;
+    final horizontalPadding = isSmallScreen ? 20.0 : (isMediumScreen ? 24.0 : 32.0);
+    final topSpacing = isSmallScreen ? 20.0 : (screenHeight < 700 ? 30.0 : 40.0);
+    final fieldSpacing = isSmallScreen ? 12.0 : 16.0;
+    final buttonHeight = isSmallScreen ? 48.0 : 52.0;
     const accentLight = Color(0xFF34D399);
     const bgColor = Color(0xFFF0FDF4);
     const cardColor = Colors.white;
@@ -203,205 +242,168 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
             // Contenido principal
             SafeArea(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 20),
+                      SizedBox(height: topSpacing),
 
-                      // Logo y branding
-                      _buildHeader(accentColor, textColor, mutedColor),
-
-                      const SizedBox(height: 30),
-
-                      // Card de login
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(5),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                      // Formulario minimalista sin card
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Título minimalista centrado
+                            Text(
+                              'Bienvenido',
+                              style: GoogleFonts.inter(
+                                fontSize: titleFontSize,
+                                fontWeight: FontWeight.w800,
+                                color: textColor,
+                                letterSpacing: -0.5,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          ],
-                        ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                              // Título
-                          Row(
-                            children: [
+                            SizedBox(height: isSmallScreen ? 4 : 6),
+                            Text(
+                              'Inicia sesión para continuar',
+                              style: GoogleFonts.inter(
+                                fontSize: subtitleFontSize,
+                                color: mutedColor,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: isSmallScreen ? 20 : 28),
+
+                            // Error message
+                            if (_errorMessage != null) ...[
                               Container(
-                                    padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                      color: accentColor.withAlpha(20),
-                                      borderRadius: BorderRadius.circular(10),
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFECACA)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Iconsax.warning_2, color: Color(0xFFDC2626), size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _errorMessage!,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          color: const Color(0xFFDC2626),
+                                        ),
+                                      ),
                                     ),
-                                    child: Icon(
-                                      Iconsax.scissor,
-                                      color: accentColor,
-                                      size: 20,
+                                  ],
                                 ),
                               ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                          'Bienvenido',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor,
-                                            letterSpacing: -0.5,
+                              const SizedBox(height: 20),
+                            ],
+
+                            // Campo Email
+                            _buildTextField(
+                              context: context,
+                              label: 'Email',
+                              controller: _userController,
+                              focusNode: _userFocus,
+                              isFocused: _userFocused,
+                              icon: Iconsax.sms,
+                              keyboardType: TextInputType.emailAddress,
+                              hintText: 'tu@email.com',
+                              validator: (v) => v == null || v.isEmpty ? 'El email es requerido' : null,
+                              accentColor: accentColor,
+                              accentLight: accentLight,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                              borderColor: borderColor,
+                              cardColor: cardColor,
+                            ),
+
+                            SizedBox(height: fieldSpacing),
+
+                            // Campo Contraseña
+                            _buildTextField(
+                              context: context,
+                              label: 'Contraseña',
+                              controller: _passwordController,
+                              focusNode: _passFocus,
+                              isFocused: _passFocused,
+                              icon: Iconsax.lock,
+                              obscureText: _obscurePassword,
+                              hintText: '••••••••',
+                              validator: (v) => v == null || v.isEmpty ? 'La contraseña es requerida' : null,
+                              accentColor: accentColor,
+                              accentLight: accentLight,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                              borderColor: borderColor,
+                              cardColor: cardColor,
+                              suffixIcon: GestureDetector(
+                                onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                                child: Icon(
+                                  _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
+                                  color: mutedColor,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: fieldSpacing),
+
+                            // Recordar credenciales
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: Checkbox(
+                                    value: _rememberCredentials,
+                                    onChanged: (value) {
+                                      setState(() => _rememberCredentials = value ?? false);
+                                    },
+                                    activeColor: accentColor,
+                                    checkColor: Colors.white,
+                                    side: BorderSide(
+                                      color: _rememberCredentials ? accentColor : borderColor,
+                                      width: 1.5,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                   ),
-                                  Text(
-                                          'Inicia sesión para continuar',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: mutedColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                              ),
-                            ],
-                          ),
-
-                              const SizedBox(height: 24),
-
-                          // Error message
-                          if (_errorMessage != null) ...[
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                    color: const Color(0xFFFEF2F2),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: const Color(0xFFFECACA)),
-                              ),
-                              child: Row(
-                                children: [
-                                      const Icon(Iconsax.warning_2, color: Color(0xFFDC2626), size: 20),
-                                  const SizedBox(width: 12),
-                                  Expanded(
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() => _rememberCredentials = !_rememberCredentials);
+                                    },
                                     child: Text(
-                                      _errorMessage!,
+                                      'Recordar credenciales',
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
-                                            color: const Color(0xFFDC2626),
+                                        fontWeight: FontWeight.w500,
+                                        color: textColor,
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                                const SizedBox(height: 20),
-                          ],
 
-                              // Campo Email
-                              _buildTextField(
-                                label: 'Email',
-                              controller: _userController,
-                              focusNode: _userFocus,
-                                isFocused: _userFocused,
-                                icon: Iconsax.sms,
-                                keyboardType: TextInputType.emailAddress,
-                                hintText: 'tu@email.com',
-                                validator: (v) => v == null || v.isEmpty ? 'El email es requerido' : null,
-                                accentColor: accentColor,
-                                accentLight: accentLight,
-                                textColor: textColor,
-                                mutedColor: mutedColor,
-                                borderColor: borderColor,
-                                cardColor: cardColor,
-                          ),
-
-                              const SizedBox(height: 16),
-
-                          // Campo Contraseña
-                              _buildTextField(
-                                label: 'Contraseña',
-                              controller: _passwordController,
-                              focusNode: _passFocus,
-                                isFocused: _passFocused,
-                                icon: Iconsax.lock,
-                              obscureText: _obscurePassword,
-                                hintText: '••••••••',
-                                validator: (v) => v == null || v.isEmpty ? 'La contraseña es requerida' : null,
-                                accentColor: accentColor,
-                                accentLight: accentLight,
-                                textColor: textColor,
-                                mutedColor: mutedColor,
-                                borderColor: borderColor,
-                                cardColor: cardColor,
-                                suffixIcon: GestureDetector(
-                                  onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                                    child: Icon(
-                                      _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                                      color: mutedColor,
-                                      size: 20,
-                                    ),
-                                  ),
-                          ),
-
-                              const SizedBox(height: 16),
-
-                              // Recordar credenciales
-                          Row(
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: Checkbox(
-                                  value: _rememberCredentials,
-                                  onChanged: (value) {
-                                        setState(() => _rememberCredentials = value ?? false);
-                                  },
-                                  activeColor: accentColor,
-                                  checkColor: Colors.white,
-                                  side: BorderSide(
-                                    color: _rememberCredentials ? accentColor : borderColor,
-                                    width: 1.5,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                        setState(() => _rememberCredentials = !_rememberCredentials);
-                                  },
-                                  child: Text(
-                                        'Recordar credenciales',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                              const SizedBox(height: 24),
+                            SizedBox(height: isSmallScreen ? 24 : 28),
 
                           // Botón de login
                           SizedBox(
                             width: double.infinity,
-                                height: 52,
+                                height: buttonHeight,
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _submitForm,
                               style: ElevatedButton.styleFrom(
@@ -439,40 +441,79 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                     ),
                             ),
                           ),
-                            ],
-                          ),
-                              ),
-                          ),
 
-                          const SizedBox(height: 24),
+                          SizedBox(height: isSmallScreen ? 20 : 24),
+
+                          // Texto clickeable para ver demo
+                          Center(
+                            child: GestureDetector(
+                              onTap: _isLoading ? null : _enterDemoMode,
+                              child: Text(
+                                'Ver demo',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: _isLoading ? mutedColor.withAlpha(100) : accentColor,
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: isSmallScreen ? 24 : 32),
 
                       // Footer
                       Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
+                        children: [
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: isSmallScreen ? 6 : 8,
+                            runSpacing: isSmallScreen ? 8 : 10,
+                            children: [
                               _buildFeatureBadge(Iconsax.calendar_2, 'Citas', accentColor, mutedColor, borderColor),
-                                    const SizedBox(width: 8),
                               _buildFeatureBadge(Iconsax.scissor, 'Servicios', accentColor, mutedColor, borderColor),
-                                    const SizedBox(width: 8),
                               _buildFeatureBadge(Iconsax.wallet, 'Finanzas', accentColor, mutedColor, borderColor),
-                                  ],
+                            ],
+                          ),
+                          SizedBox(height: isSmallScreen ? 20 : 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Desarrollado por ',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: mutedColor.withAlpha(150),
+                                  letterSpacing: 1.2,
                                 ),
-                          const SizedBox(height: 12),
-                                Text(
-                            'Desarrollado por COWIB',
+                              ),
+                              GestureDetector(
+                                onTap: () async {
+                                  final uri = Uri.parse('https://www.cowib.es');
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                                child: Text(
+                                  'COWIB',
                                   style: GoogleFonts.inter(
-                              fontSize: 10,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w600,
-                                    color: mutedColor.withAlpha(150),
-                              letterSpacing: 1.2,
-                            ),
+                                    color: accentColor,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: isSmallScreen ? 24 : (screenHeight < 700 ? 32 : 40)),
                     ],
                   ),
                 ),
@@ -481,71 +522,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader(Color accentColor, Color textColor, Color mutedColor) {
-    return Column(
-      children: [
-        // Logo circular con efecto
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                accentColor,
-                const Color(0xFF059669),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: accentColor.withAlpha(60),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(35),
-            child: Image.asset(
-              'assets/images/logobarbe.png',
-              width: 70,
-              height: 70,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Iconsax.scissor5,
-                  color: Colors.white,
-                  size: 35,
-                );
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'BARBERPRO',
-          style: GoogleFonts.inter(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: textColor,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Sistema de Gestión Profesional',
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: mutedColor,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 
@@ -566,7 +542,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     bool obscureText = false,
     String? Function(String?)? validator,
     Widget? suffixIcon,
+    required BuildContext context,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final inputFontSize = isSmallScreen ? 14.0 : 15.0;
+    final hintFontSize = isSmallScreen ? 13.0 : 14.0;
+    final iconSize = isSmallScreen ? 20.0 : 22.0;
+    final inputPadding = isSmallScreen ? 12.0 : 14.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -578,24 +561,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
             color: textColor,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isFocused ? accentColor : borderColor,
-              width: isFocused ? 2 : 1,
+              color: isFocused ? accentColor : borderColor.withAlpha(100),
+              width: isFocused ? 2 : 1.5,
             ),
-            color: isFocused ? accentLight.withAlpha(30) : cardColor,
+            color: isFocused ? accentLight.withAlpha(20) : Colors.white.withAlpha(250),
             boxShadow: isFocused
                 ? [
                     BoxShadow(
-                      color: accentColor.withAlpha(20),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: accentColor.withAlpha(15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ]
-                : null,
+                : [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
           ),
           child: TextFormField(
             controller: controller,
@@ -604,31 +593,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
             obscureText: obscureText,
             validator: validator,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: inputFontSize,
               color: textColor,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
               hintText: hintText,
               hintStyle: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: hintFontSize,
                 color: mutedColor.withAlpha(150),
               ),
               prefixIcon: Icon(
                 icon,
                 color: isFocused ? accentColor : mutedColor,
-                size: 22,
+                size: iconSize,
               ),
               suffixIcon: suffixIcon != null
                   ? Padding(
-                      padding: const EdgeInsets.only(right: 16),
+                      padding: EdgeInsets.only(right: isSmallScreen ? 12 : 16),
                       child: suffixIcon,
                     )
                   : null,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 16,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: inputPadding,
+                vertical: inputPadding,
               ),
             ),
           ),

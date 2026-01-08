@@ -10,10 +10,14 @@ import '../../utils/role_helper.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToAppointments;
+  final VoidCallback? onNavigateToServices;
+  final VoidCallback? onNavigateToFinances;
   
   const DashboardScreen({
     super.key,
     this.onNavigateToAppointments,
+    this.onNavigateToServices,
+    this.onNavigateToFinances,
   });
 
   @override
@@ -189,6 +193,16 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
+            // Estadísticas adicionales
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildAdditionalStats(textColor, mutedColor, cardColor, borderColor, accentColor),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
             // Próximas citas (solo mostrar si hay citas activas)
             if (_dashboard!.upcomingAppointments
                 .where((apt) => 
@@ -302,7 +316,151 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 10),
+        // Tercera fila: Ganancia neta del día y del mes
+        Row(
+          children: [
+            Expanded(
+              child: _QuickStatCard(
+                icon: Iconsax.chart_21,
+                value: MoneyFormatter.formatCordobas(today.profit),
+                label: 'Ganancia hoy',
+                color: const Color(0xFF10B981),
+                textColor: textColor,
+                mutedColor: mutedColor,
+                cardColor: cardColor,
+                borderColor: borderColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _QuickStatCard(
+                icon: Iconsax.chart_21,
+                value: MoneyFormatter.formatCordobas(month.profit),
+                label: 'Ganancia mes',
+                color: const Color(0xFF10B981),
+                textColor: textColor,
+                mutedColor: mutedColor,
+                cardColor: cardColor,
+                borderColor: borderColor,
+              ),
+            ),
+          ],
+        ),
       ],
+    );
+  }
+
+  Widget _buildAdditionalStats(
+    Color textColor,
+    Color mutedColor,
+    Color cardColor,
+    Color borderColor,
+    Color accentColor,
+  ) {
+    final week = _dashboard!.thisWeek;
+    final month = _dashboard!.thisMonth;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: accentColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Iconsax.chart_2, color: accentColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Estadísticas Adicionales',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _StatItem(
+                  icon: Iconsax.people,
+                  value: month.uniqueClients.toString(),
+                  label: 'Clientes únicos',
+                  color: const Color(0xFF6366F1),
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: borderColor,
+              ),
+              Expanded(
+                child: _StatItem(
+                  icon: Iconsax.dollar_circle,
+                  value: MoneyFormatter.formatCordobas(month.averagePerClient),
+                  label: 'Promedio/cliente',
+                  color: const Color(0xFF22C55E),
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _StatItem(
+                  icon: Iconsax.calendar_2,
+                  value: week.appointments.toString(),
+                  label: 'Citas esta semana',
+                  color: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: borderColor,
+              ),
+              Expanded(
+                child: _StatItem(
+                  icon: Iconsax.calendar_2,
+                  value: month.appointments.toString(),
+                  label: 'Citas este mes',
+                  color: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -662,6 +820,59 @@ class _AppointmentMiniCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: _getStatusColor(appointment.status),
               shape: BoxShape.circle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+  final Color textColor;
+  final Color mutedColor;
+
+  const _StatItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+    required this.textColor,
+    required this.mutedColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                value,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: mutedColor,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

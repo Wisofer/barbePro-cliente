@@ -13,6 +13,7 @@ import '../../services/api/service_service.dart';
 import '../../services/api/employee_service_service.dart';
 import '../../utils/role_helper.dart';
 import '../../utils/jwt_decoder.dart';
+import '../../utils/money_formatter.dart';
 import '../../providers/auth_provider.dart';
 
 class AppointmentDetailScreen extends ConsumerStatefulWidget {
@@ -767,7 +768,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                                               ),
                                               const SizedBox(width: 6),
                                               Text(
-                                                'C\$${service.price.toStringAsFixed(2)}',
+                                                service.formattedPrice,
                                                 style: GoogleFonts.inter(
                                                   fontSize: 12,
                                                   color: accentColor,
@@ -794,7 +795,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'C\$${_getTotalPrice().toStringAsFixed(2)}',
+                                    MoneyFormatter.formatCordobas(_getTotalPrice()),
                                     style: GoogleFonts.inter(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,

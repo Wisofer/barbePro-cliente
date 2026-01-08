@@ -27,10 +27,11 @@ class AuthService {
       final loginResponse = LoginResponse.fromJson(response.data);
       
       print('🔑 [AuthService] Token recibido (primeros 30 chars): ${loginResponse.token.substring(0, loginResponse.token.length > 30 ? 30 : loginResponse.token.length)}...');
+      print('🔄 [AuthService] RefreshToken recibido (primeros 30 chars): ${loginResponse.refreshToken.substring(0, loginResponse.refreshToken.length > 30 ? 30 : loginResponse.refreshToken.length)}...');
       
-      // Guardar token
-      await _tokenStorage.saveTokens(loginResponse.token, loginResponse.token);
-      print('💾 [AuthService] Token guardado en storage');
+      // Guardar ambos tokens (access y refresh)
+      await _tokenStorage.saveTokens(loginResponse.token, loginResponse.refreshToken);
+      print('💾 [AuthService] Tokens guardados en storage (access + refresh)');
       
       // Verificar que se guardó correctamente
       final savedToken = await _tokenStorage.getAccessToken();

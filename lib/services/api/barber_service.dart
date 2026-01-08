@@ -5,6 +5,8 @@ import '../../models/dashboard_barber.dart';
 import '../../models/finance.dart';
 import '../../models/auth.dart';
 import '../../providers/providers.dart';
+import '../../providers/auth_provider.dart';
+import '../demo/mock_barber_service.dart';
 
 class BarberService {
   final Dio _dio;
@@ -263,7 +265,14 @@ class BarberService {
   }
 }
 
-final barberServiceProvider = Provider<BarberService>((ref) {
+final barberServiceProvider = Provider<dynamic>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  
+  // Si está en modo demo, usar servicio mock
+  if (authState.isDemoMode) {
+    return MockBarberService();
+  }
+  
   final dio = ref.watch(dioProvider);
   return BarberService(dio);
 });

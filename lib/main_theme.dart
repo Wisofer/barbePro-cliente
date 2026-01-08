@@ -68,7 +68,7 @@ class SystemMovilTypography {
   );
 }
 
-// Paleta de colores para BarberPro - Verde suave tipo barbero
+// Paleta de colores para BarbeNic - Verde suave tipo barbero
 class SystemMovilColors {
   // Color principal - Verde suave tipo barbero (fresco, profesional, natural)
   static const Color primary = Color(0xFF10B981); // Verde esmeralda suave

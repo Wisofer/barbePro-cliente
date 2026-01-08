@@ -65,7 +65,7 @@ class AppLocalizations {
   }
 
   static const Map<String, String> _spanishTexts = {
-    'app_title': 'System Movil',
+    'app_title': 'BarbeNic',
     'settings': 'Configuración',
     'theme': 'Tema',
     'language': 'Idioma',

@@ -107,6 +107,44 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _exitDemoMode() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Salir del Modo Demo',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          '¿Estás seguro de que deseas salir del modo demo?',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(color: const Color(0xFF6B7280)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFB84D),
+            ),
+            child: Text('Salir del Demo', style: GoogleFonts.inter()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final authNotifier = ref.read(authNotifierProvider.notifier);
+      await authNotifier.logout();
+    }
+  }
+
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -413,6 +451,58 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               accentColor: accentColor,
             ),
 
+            // Indicador de modo demo
+            if (ref.watch(authNotifierProvider).isDemoMode)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4E6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFB84D), width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFB84D).withAlpha(30),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Iconsax.info_circle,
+                        color: Color(0xFFFFB84D),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Modo Demo',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Estás viendo datos de demostración',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF92400E).withAlpha(200),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Opciones del menú
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -701,17 +791,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
                 padding: const EdgeInsets.only(top: 16),
-                child: ProfileOption(
-                  icon: Iconsax.logout,
-                  title: 'Cerrar Sesión',
-                  subtitle: 'Salir de tu cuenta',
-                  onTap: _logout,
-                  textColor: const Color(0xFFEF4444),
-                  mutedColor: const Color(0xFFEF4444),
-                  cardColor: cardColor,
-                  borderColor: Colors.transparent,
-                  accentColor: const Color(0xFFEF4444),
-                  isDestructive: true,
+                child: Column(
+                  children: [
+                    // Botón Salir del Demo (solo si está en modo demo)
+                    if (ref.watch(authNotifierProvider).isDemoMode) ...[
+                      ProfileOption(
+                        icon: Iconsax.logout_1,
+                        title: 'Salir del Demo',
+                        subtitle: 'Volver a la pantalla de inicio de sesión',
+                        onTap: _exitDemoMode,
+                        textColor: const Color(0xFFFFB84D),
+                        mutedColor: const Color(0xFFFFB84D),
+                        cardColor: cardColor,
+                        borderColor: Colors.transparent,
+                        accentColor: const Color(0xFFFFB84D),
+                        isDestructive: false,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    // Botón Cerrar Sesión
+                    ProfileOption(
+                      icon: Iconsax.logout,
+                      title: 'Cerrar Sesión',
+                      subtitle: 'Salir de tu cuenta',
+                      onTap: _logout,
+                      textColor: const Color(0xFFEF4444),
+                      mutedColor: const Color(0xFFEF4444),
+                      cardColor: cardColor,
+                      borderColor: Colors.transparent,
+                      accentColor: const Color(0xFFEF4444),
+                      isDestructive: true,
+                    ),
+                  ],
                 ),
               ),
             ),

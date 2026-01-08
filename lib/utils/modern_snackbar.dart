@@ -4,7 +4,7 @@ import '../main_theme.dart';
 import 'snackbar_helper.dart';
 
 /// Utilidades para mostrar SnackBars modernos con iconos y animaciones
-/// Usando la paleta de colores personalizada de System Movil
+/// Usando la paleta de colores personalizada de BarbeNic
 class ModernSnackBar {
   
   /// Mostrar SnackBar completamente personalizado con colores del tema

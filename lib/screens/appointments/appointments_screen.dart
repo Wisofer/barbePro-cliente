@@ -8,6 +8,7 @@ import '../../services/api/appointment_service.dart';
 import '../../services/api/employee_appointment_service.dart';
 import '../../utils/role_helper.dart';
 import '../../utils/jwt_decoder.dart';
+import '../../utils/money_formatter.dart';
 import '../../providers/auth_provider.dart';
 import 'create_appointment_screen.dart';
 import 'appointment_detail_screen.dart';
@@ -169,6 +170,36 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                     ],
                   ),
                   const Spacer(),
+                  // Icono de historial
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AppointmentHistoryScreen(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: mutedColor.withAlpha(15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Iconsax.document_text,
+                          color: textColor,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Botón agregar cita
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -832,7 +863,7 @@ class _AppointmentCard extends ConsumerWidget {
                           Icon(Iconsax.dollar_circle, size: 14, color: accentColor),
                           const SizedBox(width: 4),
                           Text(
-                            'C\$${_getTotalPrice(appointment).toStringAsFixed(2)}',
+                            MoneyFormatter.formatCordobas(_getTotalPrice(appointment)),
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -876,5 +907,209 @@ class _AppointmentCard extends ConsumerWidget {
       'Dic'
     ];
     return '${parts[2]} ${months[int.parse(parts[1]) - 1]}';
+  }
+}
+
+/// Pantalla de historial completo de citas
+class AppointmentHistoryScreen extends ConsumerStatefulWidget {
+  const AppointmentHistoryScreen({super.key});
+
+  @override
+  ConsumerState<AppointmentHistoryScreen> createState() => _AppointmentHistoryScreenState();
+}
+
+class _AppointmentHistoryScreenState extends ConsumerState<AppointmentHistoryScreen> {
+  List<AppointmentDto> _appointments = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      List<AppointmentDto> appointments;
+      if (RoleHelper.isEmployee(ref)) {
+        final service = ref.read(employeeAppointmentServiceProvider);
+        appointments = await service.getHistory();
+      } else {
+        final service = ref.read(appointmentServiceProvider);
+        appointments = await service.getHistory();
+      }
+
+      // Ordenar por fecha más reciente primero
+      appointments.sort((a, b) {
+        final dateA = DateTime.parse('${a.date} ${a.time}');
+        final dateB = DateTime.parse('${b.date} ${b.time}');
+        return dateB.compareTo(dateA);
+      });
+
+      if (mounted) {
+        setState(() {
+          _appointments = appointments;
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      final errorData = e.response?.data;
+      
+      String message;
+      if (errorData is Map<String, dynamic>) {
+        message = errorData['message'] ?? e.message ?? 'Error desconocido';
+      } else if (errorData is String) {
+        message = errorData;
+      } else {
+        message = e.message ?? 'Error desconocido';
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = statusCode != null ? 'Error $statusCode: $message' : message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
+    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
+    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF0FDF4);
+    const accentColor = Color(0xFF10B981);
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        title: Text(
+          'Historial de Citas',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: cardColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Iconsax.arrow_left_2),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: accentColor))
+          : _errorMessage != null
+              ? _ErrorState(
+                  errorMessage: _errorMessage!,
+                  onRetry: _loadHistory,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                  accentColor: accentColor,
+                )
+              : _appointments.isEmpty
+                  ? _EmptyHistoryState(
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadHistory,
+                      color: accentColor,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _appointments.length,
+                        itemBuilder: (context, index) {
+                          final apt = _appointments[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _AppointmentCard(
+                              appointment: apt,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                              cardColor: cardColor,
+                              borderColor: borderColor,
+                              accentColor: accentColor,
+                              onTap: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AppointmentDetailScreen(
+                                      appointment: apt,
+                                    ),
+                                  ),
+                                );
+                                if (result == true) {
+                                  _loadHistory();
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+    );
+  }
+}
+
+class _EmptyHistoryState extends StatelessWidget {
+  final Color textColor;
+  final Color mutedColor;
+
+  const _EmptyHistoryState({
+    required this.textColor,
+    required this.mutedColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Iconsax.document_text,
+              color: mutedColor,
+              size: 64,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No hay historial',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Aún no tienes citas en el historial',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: mutedColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

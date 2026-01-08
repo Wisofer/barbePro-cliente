@@ -18,6 +18,7 @@ class AuthState {
     this.isAuthenticated = false,
     this.isInitialized = false,
     this.isLoading = false,
+    this.isDemoMode = false,
     this.userToken,
     this.userProfile,
     this.errorMessage,
@@ -26,6 +27,7 @@ class AuthState {
   final bool isAuthenticated;
   final bool isInitialized;
   final bool isLoading;
+  final bool isDemoMode;
   final String? userToken;
   final UserProfile? userProfile;
   final String? errorMessage;
@@ -36,6 +38,7 @@ class AuthState {
     bool? isAuthenticated,
     bool? isInitialized,
     bool? isLoading,
+    bool? isDemoMode,
     String? userToken,
     UserProfile? userProfile,
     String? errorMessage,
@@ -46,6 +49,7 @@ class AuthState {
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isInitialized: isInitialized ?? this.isInitialized,
       isLoading: isLoading ?? this.isLoading,
+      isDemoMode: isDemoMode ?? this.isDemoMode,
       userToken: userToken ?? this.userToken,
       userProfile: clearProfile ? null : (userProfile ?? this.userProfile),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -91,11 +95,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final savedToken = await _tokenStorage.getAccessToken();
+      final refreshToken = await _tokenStorage.getRefreshToken();
+      
       if (savedToken != null && savedToken.isNotEmpty) {
         // Verificar si el token está expirado
         if (JwtDecoder.isTokenExpired(savedToken)) {
-          // Token expirado, limpiar y pedir login
-          await _clearAuthState();
+          // Token expirado, intentar refrescar antes de limpiar
+          print('🔄 [Auth] Token expirado, intentando refrescar...');
+          
+          // Solo intentar refresh si hay refreshToken disponible
+          if (refreshToken != null && refreshToken.isNotEmpty) {
+            final refreshed = await _tryRefreshToken(refreshToken);
+            
+            if (refreshed != null && refreshed.isNotEmpty) {
+              // Token refrescado exitosamente
+              print('✅ [Auth] Token refrescado exitosamente');
+              _dio.options.headers['Authorization'] = 'Bearer $refreshed';
+              state = state.copyWith(
+                userToken: refreshed,
+                isAuthenticated: true,
+              );
+              // Cargar perfil del usuario
+              await loadUserProfile();
+            } else {
+              // No se pudo refrescar, limpiar y pedir login
+              print('❌ [Auth] No se pudo refrescar el token, limpiando estado');
+              await _clearAuthState();
+            }
+          } else {
+            // No hay refreshToken, limpiar y pedir login
+            print('❌ [Auth] No hay refreshToken disponible, limpiando estado');
+            await _clearAuthState();
+          }
         } else {
           // Token válido, configurar header
           _dio.options.headers['Authorization'] = 'Bearer $savedToken';
@@ -114,9 +145,49 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       }
     } catch (e) {
+      print('❌ [Auth] Error en _initializeAuth: $e');
       await _clearAuthState();
     } finally {
       state = state.copyWith(isInitialized: true);
+    }
+  }
+
+  /// Intenta refrescar el token usando el refresh token
+  Future<String?> _tryRefreshToken(String refreshToken) async {
+    try {
+      print('🔄 [Auth] Intentando refrescar token...');
+      final response = await _dio.post(
+        '/auth/refresh',
+        data: {
+          'refreshToken': refreshToken,
+        },
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        // El backend devuelve: { "token": "...", "refreshToken": "...", "user": {...}, "role": "..." }
+        final newToken = response.data['token'] as String?;
+        final newRefreshToken = response.data['refreshToken'] as String?;
+        
+        if (newToken != null && newToken.isNotEmpty) {
+          // Guardar ambos tokens (access y refresh)
+          await _tokenStorage.saveTokens(
+            newToken, 
+            newRefreshToken ?? newToken, // Si no hay nuevo refreshToken, usar el mismo
+          );
+          print('✅ [Auth] Nuevos tokens guardados (access + refresh)');
+          return newToken;
+        }
+      }
+      
+      print('⚠️ [Auth] Respuesta de refresh no válida: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      print('❌ [Auth] Error al refrescar token: $e');
+      return null;
     }
   }
 
@@ -126,6 +197,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _dio.options.headers.remove('Authorization');
     state = state.copyWith(
       isAuthenticated: false,
+      isDemoMode: false,
       userToken: null,
       clearProfile: true,
       errorMessage: null,
@@ -183,6 +255,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return false;
     }
+  }
+
+  /// Activar modo demo
+  Future<void> enableDemoMode() async {
+    final demoProfile = UserProfile(
+      userId: '999',
+      userName: 'demo@barbenic.com',
+      role: 'Barber',
+      nombre: 'Usuario',
+      apellido: 'de Prueba',
+      email: 'demo@barbenic.com',
+      phone: '8888-8888',
+    );
+
+    state = state.copyWith(
+      isAuthenticated: true,
+      isDemoMode: true,
+      isLoading: false,
+      userToken: 'demo_token',
+      userProfile: demoProfile,
+      errorMessage: null,
+    );
   }
 
   /// Cerrar sesión

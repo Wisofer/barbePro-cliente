@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/service.dart';
 import '../../providers/providers.dart';
+import '../../providers/auth_provider.dart';
+import '../demo/mock_service_service.dart';
 
 class ServiceService {
   final Dio _dio;
@@ -126,7 +128,14 @@ class ServiceService {
   }
 }
 
-final serviceServiceProvider = Provider<ServiceService>((ref) {
+final serviceServiceProvider = Provider<dynamic>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  
+  // Si está en modo demo, usar servicio mock
+  if (authState.isDemoMode) {
+    return MockServiceService();
+  }
+  
   final dio = ref.watch(dioProvider);
   return ServiceService(dio);
 });

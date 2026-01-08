@@ -75,9 +75,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingOption(
                     icon: Iconsax.moon,
                     title: 'Modo Oscuro',
-                    subtitle: 'Activar tema oscuro',
+                    subtitle: settings.themeMode == ThemeMode.dark 
+                        ? 'Tema oscuro activado' 
+                        : settings.themeMode == ThemeMode.light
+                            ? 'Tema claro activado'
+                            : 'Siguiendo configuración del sistema',
                     trailing: Switch(
-                      value: settings.isDarkMode,
+                      value: settings.themeMode == ThemeMode.dark,
                       onChanged: (value) {
                         ref.read(settingsNotifierProvider.notifier).setThemeMode(
                           value ? ThemeMode.dark : ThemeMode.light,
@@ -116,13 +120,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingOption(
                     icon: Iconsax.notification,
                     title: 'Notificaciones Push',
-                    subtitle: 'Recibir notificaciones de nuevas citas',
-                    trailing: Switch(
-                      value: true, // TODO: Conectar con configuración real
-                      onChanged: (value) {
-                        // TODO: Implementar
-                      },
-                      activeColor: accentColor,
+                    subtitle: 'Disponible',
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: accentColor.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Próximo',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: accentColor,
+                        ),
+                      ),
                     ),
                     textColor: textColor,
                     mutedColor: mutedColor,
@@ -131,13 +143,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingOption(
                     icon: Iconsax.sound,
                     title: 'Sonidos',
-                    subtitle: 'Reproducir sonidos en notificaciones',
-                    trailing: Switch(
-                      value: true, // TODO: Conectar con configuración real
-                      onChanged: (value) {
-                        // TODO: Implementar
-                      },
-                      activeColor: accentColor,
+                    subtitle: 'Disponible',
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: accentColor.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Próximo',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: accentColor,
+                        ),
+                      ),
                     ),
                     textColor: textColor,
                     mutedColor: mutedColor,
@@ -171,9 +191,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     icon: Iconsax.global,
                     title: 'Idioma de la Aplicación',
                     subtitle: 'Español',
-                    trailing: Icon(Iconsax.arrow_right_3, color: mutedColor, size: 18),
+                    trailing: Icon(Iconsax.arrow_right_3, color: mutedColor.withAlpha(100), size: 18),
                     onTap: () {
-                      // TODO: Mostrar selector de idioma
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Esta funcionalidad estará disponible'),
+                          backgroundColor: accentColor,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
                     },
                     textColor: textColor,
                     mutedColor: mutedColor,

@@ -111,6 +111,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 final visibleIndex = _getVisibleIndex(1);
                                 _onTabChanged(visibleIndex);
                               },
+                              onNavigateToServices: () {
+                                final visibleIndex = _getVisibleIndex(2);
+                                _onTabChanged(visibleIndex);
+                              },
+                              onNavigateToFinances: () {
+                                final visibleIndex = _getVisibleIndex(3);
+                                _onTabChanged(visibleIndex);
+                              },
                             ),
                       // Índice 1: Citas
                       const AppointmentsScreen(),

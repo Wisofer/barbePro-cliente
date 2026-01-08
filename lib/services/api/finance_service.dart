@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/finance.dart';
 import '../../providers/providers.dart';
+import '../../providers/auth_provider.dart';
+import '../demo/mock_finance_service.dart';
 
 class FinanceService {
   final Dio _dio;
@@ -169,7 +171,14 @@ class FinanceService {
   }
 }
 
-final financeServiceProvider = Provider<FinanceService>((ref) {
+final financeServiceProvider = Provider<dynamic>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  
+  // Si está en modo demo, usar servicio mock
+  if (authState.isDemoMode) {
+    return MockFinanceService();
+  }
+  
   final dio = ref.watch(dioProvider);
   return FinanceService(dio);
 });

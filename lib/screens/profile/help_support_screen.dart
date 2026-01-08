@@ -194,7 +194,7 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
                                 children: [
                                   Expanded(
                                     child: OutlinedButton.icon(
-                                      onPressed: () => _launchUrl('mailto:${_helpSupport!.contact.email}?subject=Soporte BarberPro'),
+                                      onPressed: () => _launchUrl('mailto:${_helpSupport!.contact.email}?subject=Soporte BarbeNic'),
                                       icon: const Icon(Iconsax.sms, size: 18),
                                       label: const Text('Email'),
                                       style: OutlinedButton.styleFrom(
