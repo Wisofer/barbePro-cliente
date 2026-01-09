@@ -308,6 +308,10 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
     Color borderColor,
     Color accentColor,
   ) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+    final cardSpacing = isSmallScreen ? 8.0 : 10.0;
+    
     return Row(
       children: [
         Expanded(
@@ -322,7 +326,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
             borderColor: borderColor,
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: cardSpacing),
         Expanded(
           child: _FinanceMiniCard(
             icon: Iconsax.arrow_up,
@@ -519,8 +523,20 @@ class _FinanceMiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+    final isMediumScreen = screenSize.width >= 360 && screenSize.width < 400;
+    
+    // Ajustar tamaños según el tamaño de pantalla
+    final iconSize = isSmallScreen ? 30.0 : (isMediumScreen ? 33.0 : 36.0);
+    final iconInnerSize = isSmallScreen ? 16.0 : 18.0;
+    final padding = isSmallScreen ? 10.0 : (isMediumScreen ? 12.0 : 14.0);
+    final fontSize = isSmallScreen ? 14.0 : (isMediumScreen ? 15.0 : 16.0);
+    final labelFontSize = isSmallScreen ? 10.0 : 11.0;
+    final iconSpacing = isSmallScreen ? 10.0 : 12.0;
+    
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(14),
@@ -535,10 +551,11 @@ class _FinanceMiniCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -547,26 +564,33 @@ class _FinanceMiniCard extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, color: Colors.white, size: 18),
+            child: Icon(icon, color: Colors.white, size: iconInnerSize),
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-              letterSpacing: -0.3,
+          SizedBox(height: iconSpacing),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+                letterSpacing: -0.3,
+              ),
+              maxLines: 1,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: labelFontSize,
               color: mutedColor,
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

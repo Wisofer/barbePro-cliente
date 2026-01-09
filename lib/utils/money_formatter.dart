@@ -1,11 +1,27 @@
-import 'package:intl/intl.dart';
-
 /// Utilidades para formatear valores monetarios redondeados a enteros
 /// Todos los valores monetarios se redondean a números enteros sin decimales
 /// Formato nicaragüense: separadores de miles con coma (21,000)
 class MoneyFormatter {
   // Formateador de números con separadores de miles (formato nicaragüense)
-  static final _numberFormat = NumberFormat('#,###', 'es_NI');
+  // Formato personalizado: comas para miles, sin decimales
+  static String _formatWithCommas(int value) {
+    if (value < 1000) {
+      return value.toString();
+    }
+    
+    final String valueStr = value.toString();
+    final int length = valueStr.length;
+    final StringBuffer buffer = StringBuffer();
+    
+    for (int i = 0; i < length; i++) {
+      if (i > 0 && (length - i) % 3 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(valueStr[i]);
+    }
+    
+    return buffer.toString();
+  }
   /// Redondea un valor double a entero
   /// Ejemplo: 120.76 -> 121, 120.24 -> 120
   static int roundToInt(double value) {
@@ -21,7 +37,7 @@ class MoneyFormatter {
   /// Formatea un número con separadores de miles (formato nicaragüense)
   /// Ejemplo: 500 -> "500", 1500 -> "1,500", 21000 -> "21,000", 1234567 -> "1,234,567"
   static String formatWithThousands(int value) {
-    return _numberFormat.format(value);
+    return _formatWithCommas(value);
   }
 
   /// Formatea un valor como string sin decimales con separadores de miles

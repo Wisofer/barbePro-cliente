@@ -496,6 +496,7 @@ class _ServiceCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: 40,
@@ -519,32 +520,43 @@ class _ServiceCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        service.name,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(Iconsax.clock, size: 12, color: mutedColor),
-                          const SizedBox(width: 5),
-                          Text(
-                            service.formattedDuration,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: mutedColor,
-                            ),
+                  child: Padding(
+                    // Reservar espacio para los botones (80px = 32px botón + 6px espacio + 32px botón + 10px margen)
+                    padding: const EdgeInsets.only(right: 80),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          service.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
                           ),
-                        ],
-                      ),
-                    ],
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(Iconsax.clock, size: 12, color: mutedColor),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                service.formattedDuration,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: mutedColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

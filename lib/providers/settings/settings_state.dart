@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 @immutable
 class SettingsState {
   const SettingsState({
-    this.themeMode = ThemeMode.system,
+    this.themeMode = ThemeMode.light,
     this.language = 'es',
     this.currency = 'NIO',
     this.twoFactorAuth = false,

@@ -351,7 +351,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            'C\$${service.price.toStringAsFixed(2)} • ${service.formattedDuration}',
+                                            '${service.formattedPrice} • ${service.formattedDuration}',
                                             style: GoogleFonts.inter(
                                               fontSize: 12,
                                               color: mutedColor,

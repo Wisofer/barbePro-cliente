@@ -255,6 +255,11 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   ) {
     final today = _dashboard!.today;
     final month = _dashboard!.thisMonth;
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+    
+    final cardSpacing = isSmallScreen ? 8.0 : 10.0;
+    final rowSpacing = isSmallScreen ? 8.0 : 10.0;
     
     return Column(
       children: [
@@ -273,7 +278,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                 borderColor: borderColor,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: cardSpacing),
             Expanded(
               child: _QuickStatCard(
                 icon: Iconsax.wallet_3,
@@ -288,7 +293,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: rowSpacing),
         // Segunda fila: Egresos del día y Egresos mensuales
         Row(
           children: [
@@ -304,7 +309,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                 borderColor: borderColor,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: cardSpacing),
             Expanded(
               child: _QuickStatCard(
                 icon: Iconsax.money_send,
@@ -319,7 +324,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: rowSpacing),
         // Tercera fila: Ganancia neta del día y del mes
         Row(
           children: [
@@ -335,7 +340,7 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
                 borderColor: borderColor,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: cardSpacing),
             Expanded(
               child: _QuickStatCard(
                 icon: Iconsax.chart_21,
@@ -579,8 +584,20 @@ class _QuickStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+    final isMediumScreen = screenSize.width >= 360 && screenSize.width < 400;
+    
+    // Ajustar tamaños según el tamaño de pantalla
+    final iconSize = isSmallScreen ? 32.0 : (isMediumScreen ? 36.0 : 40.0);
+    final iconInnerSize = isSmallScreen ? 18.0 : 20.0;
+    final padding = isSmallScreen ? 10.0 : (isMediumScreen ? 12.0 : 14.0);
+    final fontSize = isSmallScreen ? 16.0 : (isMediumScreen ? 17.0 : 18.0);
+    final labelFontSize = isSmallScreen ? 10.0 : 11.0;
+    final spacing = isSmallScreen ? 8.0 : 12.0;
+    
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(14),
@@ -596,8 +613,8 @@ class _QuickStatCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -606,30 +623,38 @@ class _QuickStatCard extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(icon, color: Colors.white, size: iconInnerSize),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: spacing),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                    letterSpacing: -0.3,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: GoogleFonts.inter(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                      letterSpacing: -0.3,
+                    ),
+                    maxLines: 1,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: labelFontSize,
                     color: mutedColor,
                     fontWeight: FontWeight.w500,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

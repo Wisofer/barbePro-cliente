@@ -14,9 +14,22 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeIndex = prefs.getInt('theme_mode');
-      final themeMode = themeIndex != null && themeIndex >= 0 && themeIndex < ThemeMode.values.length
-          ? ThemeMode.values[themeIndex]
-          : ThemeMode.system;
+      ThemeMode themeMode;
+      
+      if (themeIndex != null && themeIndex >= 0 && themeIndex < ThemeMode.values.length) {
+        themeMode = ThemeMode.values[themeIndex];
+        // Si el valor guardado es ThemeMode.system, convertirlo a ThemeMode.light
+        if (themeMode == ThemeMode.system) {
+          themeMode = ThemeMode.light;
+          // Guardar el nuevo valor
+          await prefs.setInt('theme_mode', themeMode.index);
+        }
+      } else {
+        // Si no hay valor guardado, usar ThemeMode.light y guardarlo
+        themeMode = ThemeMode.light;
+        await prefs.setInt('theme_mode', themeMode.index);
+      }
+      
       final language = prefs.getString('language') ?? 'es';
       final currency = prefs.getString('currency') ?? 'NIO';
       final twoFactor = prefs.getBool('two_factor_auth') ?? false;
