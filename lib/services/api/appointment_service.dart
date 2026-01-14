@@ -172,6 +172,18 @@ class AppointmentService {
     }
   }
 
+  /// Obtener URL de WhatsApp para rechazo de cita
+  Future<Map<String, dynamic>> getWhatsAppUrlReject(int id) async {
+    try {
+      final response = await _dio.get('/barber/appointments/$id/whatsapp-url-reject');
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      rethrow;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Obtener historial completo de citas (sin filtros de fecha)
   Future<List<AppointmentDto>> getHistory() async {
     try {

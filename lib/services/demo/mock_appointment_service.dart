@@ -107,5 +107,21 @@ class MockAppointmentService {
       'url': 'https://wa.me/50588888888?text=Hola',
     };
   }
+
+  Future<Map<String, dynamic>> getWhatsAppUrlReject(int id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final appointment = MockData.mockHistoryAppointments
+        .firstWhere((apt) => apt.id == id, orElse: () => MockData.mockTodayAppointments.first);
+    
+    final message = 'Hola ${appointment.clientName}! 👋\n\n'
+        'Lamentamos informarte que no podemos atenderte el ${appointment.date} a las ${appointment.time}. '
+        '¿Te gustaría reagendar para otro horario? 📅';
+    
+    return {
+      'url': 'https://wa.me/505${appointment.clientPhone}?text=${Uri.encodeComponent(message)}',
+      'phoneNumber': '505${appointment.clientPhone}',
+      'message': message,
+    };
+  }
 }
 

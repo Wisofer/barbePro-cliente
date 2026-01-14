@@ -54,6 +54,13 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
       return;
     }
 
+    // Si se completa una cita que ya tiene servicios, enviar los serviceIds
+    if (newStatus == 'Completed' && _appointment.services.isNotEmpty) {
+      final serviceIds = _appointment.services.map((s) => s.id).toList();
+      await _updateStatusWithServices(newStatus, serviceIds);
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -104,6 +111,11 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
         // Si se confirmó la cita, ofrecer enviar WhatsApp (solo para Barber)
         if (newStatus == 'Confirmed' && RoleHelper.isBarber(ref)) {
           await _showWhatsAppDialog();
+        }
+        
+        // Si se canceló la cita, ofrecer enviar WhatsApp de rechazo (solo para Barber)
+        if (newStatus == 'Cancelled' && RoleHelper.isBarber(ref)) {
+          await _showWhatsAppRejectDialog();
         }
         
         // Notificar que hubo cambios para refrescar otras pantallas
@@ -174,8 +186,9 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Cita completada exitosamente'),
+            content: Text('Cita completada exitosamente. Los ingresos se han registrado automáticamente.'),
             backgroundColor: Color(0xFF10B981),
+            duration: Duration(seconds: 4),
           ),
         );
         
@@ -503,6 +516,143 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
           uri,
           mode: LaunchMode.externalApplication,
         );
+      } catch (e) {
+        // Si falla con externalApplication, intentar con platformDefault
+        try {
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+        } catch (e2) {
+          // Si también falla, intentar con la URL web de WhatsApp
+          if (url.contains('whatsapp://')) {
+            // Convertir whatsapp:// a https://wa.me/
+            final phoneMatch = RegExp(r'phone=([0-9]+)').firstMatch(url);
+            final textMatch = RegExp(r'text=([^&]+)').firstMatch(url);
+            
+            if (phoneMatch != null) {
+              String webUrl = 'https://wa.me/${phoneMatch.group(1)}';
+              if (textMatch != null) {
+                final encodedText = Uri.encodeComponent(textMatch.group(1)!);
+                webUrl += '?text=$encodedText';
+              }
+              
+              try {
+                await launchUrl(
+                  Uri.parse(webUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+                return;
+              } catch (e3) {
+                // Continuar con el error original
+              }
+            }
+          }
+          
+          // Si todo falla, mostrar error
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('No se pudo abrir WhatsApp. Asegúrate de tener WhatsApp instalado.'),
+                backgroundColor: const Color(0xFFEF4444),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al obtener URL de WhatsApp: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showWhatsAppRejectDialog() async {
+    final sendWhatsApp = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                '💬',
+                style: TextStyle(fontSize: 26),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Notificar rechazo',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        content: const Text(
+          '¿Deseas enviar un mensaje de disculpa al cliente por WhatsApp?',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF25D366),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+
+    if (sendWhatsApp == true) {
+      await _sendWhatsAppRejectMessage();
+    }
+  }
+
+  Future<void> _sendWhatsAppRejectMessage() async {
+    try {
+      // Solo Barber puede enviar WhatsApp de rechazo
+      if (RoleHelper.isEmployee(ref)) {
+        throw Exception('Los trabajadores no pueden enviar mensajes de WhatsApp');
+      }
+
+      final service = ref.read(appointmentServiceProvider);
+      final whatsappData = await service.getWhatsAppUrlReject(_appointment.id);
+      
+      final url = whatsappData['url'] as String;
+      final uri = Uri.parse(url);
+      
+      // Intentar abrir WhatsApp directamente
+      try {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('WhatsApp abierto para notificar al cliente'),
+              backgroundColor: Color(0xFF10B981),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       } catch (e) {
         // Si falla con externalApplication, intentar con platformDefault
         try {
