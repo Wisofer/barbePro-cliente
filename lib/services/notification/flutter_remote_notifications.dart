@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -8,30 +9,54 @@ import 'package:system_movil/services/notification/notification_handler.dart';
 import 'package:system_movil/services/navigation/navigation_service.dart';
 
 /// Handler para mensajes en background (debe ser top-level)
+/// IMPORTANTE: Este handler se ejecuta cuando la app está en background O completamente cerrada
+/// Cuando la app está cerrada (terminated), el sistema operativo ya muestra la notificación automáticamente,
+/// por lo que NO debemos mostrar una notificación local adicional para evitar duplicados.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  developer.log('Mensaje en background: ${message.messageId} data=${message.data}');
+  developer.log('Mensaje en background handler: ${message.messageId} data=${message.data}');
   
   final type = (message.data['type'] ?? message.data['route'] ?? '')
       .toString()
       .toLowerCase();
   
-  // Tipos de notificaciones que NO se muestran en foreground
-  const suppressedInForeground = {'post', 'comment', 'message'};
+  // Tipos de notificaciones que NO se muestran
+  const suppressedTypes = {'post', 'comment', 'message'};
 
-  if (suppressedInForeground.contains(type)) {
+  if (suppressedTypes.contains(type)) {
     developer.log('Notificación suprimida en background para type="$type"');
     return;
   }
 
-  // Mostrar notificación local
-  await FlutterLocalNotifications.showNotificationFromMessage(message);
+  // ⚠️ IMPORTANTE: NO mostrar notificación local aquí
+  // Cuando la app está completamente cerrada (terminated), el sistema operativo
+  // ya muestra la notificación automáticamente desde FCM.
+  // Si mostramos una notificación local aquí, se duplicaría.
+  // 
+  // El sistema operativo maneja automáticamente:
+  // - Notificaciones cuando la app está cerrada (terminated)
+  // - Notificaciones cuando la app está en background
+  //
+  // Solo necesitamos mostrar notificación local cuando la app está en FOREGROUND,
+  // que se maneja en el listener onMessage (línea 98-116).
+  
+  // Aquí solo procesamos datos si es necesario (sin mostrar notificación)
+  developer.log('Notificación procesada en background handler (sistema mostrará la notificación)');
 }
 
 class FlutterRemoteNotifications {
   static Ref? _ref;
+  static bool _initialized = false;
+  static StreamSubscription<RemoteMessage>? _onMessageSubscription;
+  static StreamSubscription<RemoteMessage>? _onMessageOpenedAppSubscription;
   
   static Future<void> init(FcmApi fcmApi, {Ref? ref}) async {
+    // ✅ Protección contra inicialización múltiple
+    if (_initialized) {
+      developer.log('FCM ya está inicializado, omitiendo inicialización duplicada');
+      return;
+    }
+    
     _ref = ref;
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
@@ -69,9 +94,12 @@ class FlutterRemoteNotifications {
     // ✅ Obtener token FCM
     String? token = await messaging.getToken();
 
-    // ✅ Manejar cuando se abre la app desde una notificación (foreground/background)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      developer.log('App abierta desde notificación: ${message.messageId}');
+    // ✅ ESCENARIO 2: Manejar cuando se abre la app desde una notificación (BACKGROUND)
+    // Esto se ejecuta cuando la app está en segundo plano y el usuario toca la notificación
+    // Cancelar subscription anterior si existe
+    await _onMessageOpenedAppSubscription?.cancel();
+    _onMessageOpenedAppSubscription = FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      developer.log('📱 [BACKGROUND] App abierta desde notificación: ${message.messageId}');
       final payload = json.encode({
         'type': message.data['type'] ?? message.data['route'] ?? 'home',
         if (message.data.containsKey('deeplink')) 'deeplink': message.data['deeplink'],
@@ -80,9 +108,11 @@ class FlutterRemoteNotifications {
       NavigationService.navigateFromPayload(payload);
     });
 
-    // ✅ Manejar mensajes cuando la app está en foreground
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      developer.log('Foreground message recibido: id=${message.messageId} data=${message.data}');
+    // ✅ ESCENARIO 1: Manejar mensajes cuando la app está en FOREGROUND (abierta y visible)
+    // Cancelar subscription anterior si existe
+    await _onMessageSubscription?.cancel();
+    _onMessageSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      developer.log('📱 [FOREGROUND] Notificación recibida: id=${message.messageId}');
       
       final type = (message.data['type'] ?? message.data['route'] ?? '')
           .toString()
@@ -97,14 +127,16 @@ class FlutterRemoteNotifications {
       // Procesar notificación (actualizar contadores, refrescar dashboard, etc.)
       NotificationHandler.handleNotification(message);
 
-      // Mostrar notificación local
+      // ✅ Mostrar notificación local (el sistema NO la muestra automáticamente en foreground)
       FlutterLocalNotifications.showNotificationFromMessage(message);
     });
 
-    // ✅ Manejar cold start: app abierta desde notificación cuando estaba cerrada
+    // ✅ ESCENARIO 3: Manejar cold start (app completamente CERRADA)
+    // Esto se ejecuta cuando la app está completamente cerrada y el usuario toca la notificación
+    // El sistema operativo ya mostró la notificación, solo necesitamos navegar
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
-      developer.log('Cold start desde notificación: ${initialMessage.messageId}');
+      developer.log('📱 [TERMINATED] Cold start desde notificación: ${initialMessage.messageId}');
       final payload = json.encode({
         'type': initialMessage.data['type'] ?? initialMessage.data['route'] ?? 'home',
         if (initialMessage.data.containsKey('deeplink'))
@@ -128,6 +160,20 @@ class FlutterRemoteNotifications {
         await _syncFcmToken(fcmApi, newToken);
       }
     });
+    
+    // ✅ Marcar como inicializado
+    _initialized = true;
+    developer.log('FCM inicializado correctamente');
+  }
+  
+  /// Resetear estado de inicialización (útil para testing o logout)
+  static void reset() {
+    _initialized = false;
+    _onMessageSubscription?.cancel();
+    _onMessageOpenedAppSubscription?.cancel();
+    _onMessageSubscription = null;
+    _onMessageOpenedAppSubscription = null;
+    _ref = null;
   }
 
   static Future<void> _syncFcmToken(FcmApi fcmApi, String token) async {
