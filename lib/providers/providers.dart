@@ -3,12 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:system_movil/services/api/api_config.dart';
 import 'package:system_movil/services/storage/token_storage.dart';
+import 'package:system_movil/services/storage/fcm_token_storage.dart';
+import 'package:system_movil/services/notification/fcm_api.dart';
 import 'package:system_movil/providers/network/error_interceptor.dart';
 import 'package:system_movil/providers/network/token_refresh_interceptor.dart';
 
 /// Provides a singleton TokenStorage (secure storage for access/refresh tokens)
 final tokenStorageProvider = Provider<TokenStorage>((ref) {
   return TokenStorage();
+});
+
+/// Provides a singleton FcmTokenStorage (secure storage for FCM tokens)
+final fcmTokenStorageProvider = Provider<FcmTokenStorage>((ref) {
+  return FcmTokenStorage();
+});
+
+/// Provides FcmApi service for communicating with backend
+final fcmApiProvider = Provider<FcmApi>((ref) {
+  final dio = ref.watch(dioProvider);
+  final fcmStorage = ref.watch(fcmTokenStorageProvider);
+  final tokenStorage = ref.watch(tokenStorageProvider);
+  return FcmApi(dio, fcmStorage, tokenStorage);
 });
 
 /// Provides a configured Dio client with base URL, timeouts and an interceptor

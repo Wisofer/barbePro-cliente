@@ -2,6 +2,9 @@ import 'package:system_movil/services/navigation/navigation_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:system_movil/firebase_options.dart';
+import 'package:system_movil/services/notification/flutter_local_notifications.dart';
 import 'utils/app_localizations.dart';
 import 'utils/snackbar_helper.dart';
 import 'providers/settings/settings_notifier.dart';
@@ -21,6 +24,18 @@ Future<void> main() async {
     SystemUiMode.manual,
     overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
   );
+
+  // ✅ Inicializar Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    // ✅ Inicializar notificaciones locales
+    await FlutterLocalNotifications.init();
+  } catch (e) {
+    // Manejar error silenciosamente - Firebase puede no estar configurado aún
+  }
 
   runApp(const ProviderScope(child: SystemMovilApp()));
 }

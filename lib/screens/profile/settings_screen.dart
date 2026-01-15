@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../providers/settings/settings_notifier.dart';
 import '../../utils/audio_helper.dart';
 
@@ -13,6 +15,162 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  NotificationSettings? _notificationSettings;
+  bool _isCheckingPermissions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkNotificationPermissions();
+  }
+
+  Future<void> _checkNotificationPermissions() async {
+    setState(() {
+      _isCheckingPermissions = true;
+    });
+    try {
+      final settings = await FirebaseMessaging.instance.getNotificationSettings();
+      if (mounted) {
+        setState(() {
+          _notificationSettings = settings;
+          _isCheckingPermissions = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isCheckingPermissions = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      if (mounted) {
+        setState(() {
+          _notificationSettings = settings;
+        });
+        if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+            settings.authorizationStatus == AuthorizationStatus.provisional) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('✅ Permisos de notificaciones activados'),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al solicitar permisos: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openAppSettings() async {
+    try {
+      await openAppSettings();
+      // Refrescar permisos después de que el usuario regrese
+      Future.delayed(const Duration(seconds: 1), () {
+        _checkNotificationPermissions();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No se pudo abrir la configuración: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  String _getPermissionSubtitle() {
+    if (_notificationSettings == null) {
+      return 'Verificando estado...';
+    }
+    switch (_notificationSettings!.authorizationStatus) {
+      case AuthorizationStatus.authorized:
+        return 'Recibirás notificaciones de citas y actualizaciones';
+      case AuthorizationStatus.denied:
+        return 'Las notificaciones están desactivadas. Actívalas en configuración';
+      case AuthorizationStatus.notDetermined:
+        return 'Toca para activar las notificaciones';
+      case AuthorizationStatus.provisional:
+        return 'Notificaciones activadas de forma provisional';
+    }
+  }
+
+  Widget? _getPermissionTrailing(Color mutedColor) {
+    if (_isCheckingPermissions) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
+    if (_notificationSettings == null) {
+      return null;
+    }
+
+    switch (_notificationSettings!.authorizationStatus) {
+      case AuthorizationStatus.authorized:
+      case AuthorizationStatus.provisional:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981).withAlpha(20),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'Activado',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF10B981),
+            ),
+          ),
+        );
+      case AuthorizationStatus.denied:
+        return Icon(Iconsax.arrow_right_3, color: mutedColor.withAlpha(100), size: 18);
+      case AuthorizationStatus.notDetermined:
+        return Icon(Iconsax.arrow_right_3, color: mutedColor.withAlpha(100), size: 18);
+    }
+  }
+
+  VoidCallback? _getPermissionOnTap() {
+    if (_notificationSettings == null) {
+      return null;
+    }
+
+    switch (_notificationSettings!.authorizationStatus) {
+      case AuthorizationStatus.authorized:
+      case AuthorizationStatus.provisional:
+        return null; // Ya está activado, no hacer nada
+      case AuthorizationStatus.denied:
+        return _openAppSettings; // Abrir configuración del sistema
+      case AuthorizationStatus.notDetermined:
+        return _requestNotificationPermissions; // Solicitar permisos
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -121,22 +279,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingOption(
                     icon: Iconsax.notification,
                     title: 'Notificaciones Push',
-                    subtitle: 'Disponible',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: accentColor.withAlpha(20),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Próximo',
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: accentColor,
-                        ),
-                      ),
-                    ),
+                    subtitle: _getPermissionSubtitle(),
+                    trailing: _getPermissionTrailing(mutedColor),
+                    onTap: _getPermissionOnTap(),
                     textColor: textColor,
                     mutedColor: mutedColor,
                   ),

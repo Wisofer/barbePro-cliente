@@ -7,6 +7,7 @@ import '../../models/dashboard_barber.dart';
 import '../../services/api/barber_service.dart';
 import '../../utils/money_formatter.dart';
 import '../../utils/role_helper.dart';
+import '../../providers/dashboard_refresh_provider.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToAppointments;
@@ -116,6 +117,18 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
     final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB);
     const accentColor = Color(0xFF10B981);
+
+    // Escuchar cambios en el provider de refresco del dashboard
+    ref.listen<int>(dashboardRefreshProvider, (previous, next) {
+      if (next > 0 && mounted && !_isLoading) {
+        // Refrescar dashboard cuando se notifica un cambio (nueva cita recibida)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            refresh();
+          }
+        });
+      }
+    });
 
     // Si es Employee, mostrar mensaje de que el dashboard no está disponible
     if (RoleHelper.isEmployee(ref)) {

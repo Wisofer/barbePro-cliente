@@ -8,6 +8,8 @@ import '../models/user_profile.dart';
 import '../services/api/auth_service.dart';
 import '../services/api/barber_service.dart';
 import '../services/storage/token_storage.dart';
+import '../services/notification/flutter_remote_notifications.dart';
+import '../services/notification/notification_handler.dart';
 import '../utils/jwt_decoder.dart';
 import 'providers.dart';
 
@@ -132,6 +134,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           );
           // Cargar perfil del usuario
           await loadUserProfile();
+          // ✅ Inicializar notificaciones si el usuario ya estaba autenticado
+          try {
+            await _initializeNotifications();
+          } catch (e) {
+            // Error silencioso al inicializar notificaciones
+          }
         }
       } else {
         state = state.copyWith(
@@ -144,6 +152,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _clearAuthState();
     } finally {
       state = state.copyWith(isInitialized: true);
+    }
+  }
+
+  /// Inicializar notificaciones remotas (FCM)
+  Future<void> _initializeNotifications() async {
+    try {
+      // Solo inicializar si el usuario está autenticado y no está en modo demo
+      if (state.isAuthenticated && !state.isDemoMode) {
+        final fcmApi = ref.read(fcmApiProvider);
+        
+        // Inicializar NotificationHandler con el ref
+        NotificationHandler.initialize(ref);
+        
+        await FlutterRemoteNotifications.init(fcmApi, ref: ref);
+      }
+    } catch (e) {
+      // Error silencioso al inicializar notificaciones
     }
   }
 
@@ -197,7 +222,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Iniciar sesión
   Future<bool> login(String email, String password) async {
-    if (_authService == null) return false;
+    if (_authService == null) {
+      return false;
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -206,6 +233,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final loginResponse = await _authService!.login(email, password);
       
       final token = loginResponse.token;
+      
       if (token.isEmpty) {
         state = state.copyWith(
           isLoading: false,
@@ -236,6 +264,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         userProfile: profile,
       );
+      
+      // ✅ Inicializar notificaciones remotas después del login exitoso
+      try {
+        await _initializeNotifications();
+      } catch (e) {
+        // No fallar el login si las notificaciones fallan
+      }
       
       return true;
     } catch (e) {
