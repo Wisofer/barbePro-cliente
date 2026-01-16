@@ -7,11 +7,15 @@ import 'package:system_movil/services/notification/flutter_local_notifications.d
 import 'package:system_movil/services/notification/fcm_api.dart';
 import 'package:system_movil/services/notification/notification_handler.dart';
 import 'package:system_movil/services/navigation/navigation_service.dart';
+import 'package:system_movil/providers/notifications_provider.dart';
 
 /// Handler para mensajes en background (debe ser top-level)
 /// IMPORTANTE: Este handler se ejecuta cuando la app está en background O completamente cerrada
 /// Cuando la app está cerrada (terminated), el sistema operativo ya muestra la notificación automáticamente,
 /// por lo que NO debemos mostrar una notificación local adicional para evitar duplicados.
+/// 
+/// NOTA: Este handler NO puede acceder a Riverpod providers directamente porque corre en un isolate separado.
+/// La actualización del badge se hará cuando la app se abra y cargue las notificaciones del backend.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   developer.log('Mensaje en background handler: ${message.messageId} data=${message.data}');
@@ -38,9 +42,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // - Notificaciones cuando la app está en background
   //
   // Solo necesitamos mostrar notificación local cuando la app está en FOREGROUND,
-  // que se maneja en el listener onMessage (línea 98-116).
+  // que se maneja en el listener onMessage (línea 111-132).
+  //
+  // ⚠️ NOTA: No podemos actualizar el badge aquí porque este handler corre en un isolate separado
+  // y no tiene acceso a Riverpod. El badge se actualizará cuando la app se abra.
   
-  // Aquí solo procesamos datos si es necesario (sin mostrar notificación)
   developer.log('Notificación procesada en background handler (sistema mostrará la notificación)');
 }
 
@@ -100,6 +106,16 @@ class FlutterRemoteNotifications {
     await _onMessageOpenedAppSubscription?.cancel();
     _onMessageOpenedAppSubscription = FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       developer.log('📱 [BACKGROUND] App abierta desde notificación: ${message.messageId}');
+      
+      // ✅ Actualizar badge de notificaciones cuando se abre desde background
+      if (_ref != null) {
+        try {
+          _ref!.read(notificationsProvider.notifier).refresh();
+        } catch (e) {
+          // Error silencioso
+        }
+      }
+      
       final payload = json.encode({
         'type': message.data['type'] ?? message.data['route'] ?? 'home',
         if (message.data.containsKey('deeplink')) 'deeplink': message.data['deeplink'],
@@ -137,6 +153,16 @@ class FlutterRemoteNotifications {
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
       developer.log('📱 [TERMINATED] Cold start desde notificación: ${initialMessage.messageId}');
+      
+      // ✅ Actualizar badge de notificaciones cuando se abre desde terminated
+      if (_ref != null) {
+        try {
+          _ref!.read(notificationsProvider.notifier).refresh();
+        } catch (e) {
+          // Error silencioso
+        }
+      }
+      
       final payload = json.encode({
         'type': initialMessage.data['type'] ?? initialMessage.data['route'] ?? 'home',
         if (initialMessage.data.containsKey('deeplink'))
