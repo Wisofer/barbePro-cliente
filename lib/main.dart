@@ -1,17 +1,18 @@
-import 'package:system_movil/services/navigation/navigation_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:system_movil/firebase_options.dart';
+import 'package:system_movil/services/navigation/navigation_service.dart';
 import 'package:system_movil/services/notification/flutter_local_notifications.dart';
-import 'utils/app_localizations.dart';
-import 'utils/snackbar_helper.dart';
+import 'main_theme.dart';
 import 'providers/settings/settings_notifier.dart';
 import 'routes/auth_wrapper.dart';
-import 'main_theme.dart';
 import 'screens/auth/login.dart';
+import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'utils/app_localizations.dart';
+import 'utils/snackbar_helper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,7 @@ class SystemMovilApp extends StatelessWidget {
           routes: {
             AuthWrapper.routeName: (context) => const AuthWrapper(),
             LoginScreen.routeName: (context) => const LoginScreen(),
+            RegisterScreen.routeName: (context) => const RegisterScreen(),
             '/home': (context) => const HomeScreen(),
           },
           debugShowCheckedModeBanner: false,

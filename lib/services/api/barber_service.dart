@@ -84,6 +84,29 @@ class BarberService {
     return QrResponse.fromJson(response.data);
   }
 
+  /// GET /api/barber/subscription — Estado Trial/Pro/Expired
+  Future<SubscriptionDto> getSubscription() async {
+    try {
+      final response = await _dio.get('/barber/subscription');
+      if (response.data is String && (response.data as String).trim().startsWith('<!DOCTYPE')) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+          message: 'Sesión expirada.',
+        );
+      }
+      return SubscriptionDto.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } on DioException catch (e) {
+      if (e.response?.data is String && (e.response!.data as String).contains('<!DOCTYPE')) {
+        throw Exception('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
+      rethrow;
+    }
+  }
+
   Future<FinanceSummaryDto> getFinanceSummary({
     DateTime? startDate,
     DateTime? endDate,
@@ -129,7 +152,7 @@ class BarberService {
     required String newPassword,
   }) async {
     try {
-      final response = await _dio.post(
+      await _dio.post(
         '/barber/change-password',
         data: {
           'currentPassword': currentPassword,
@@ -203,19 +226,13 @@ class BarberService {
   }
 
   Future<void> updateWorkingHours(List<Map<String, dynamic>> workingHours) async {
-    try {
-      final requestData = {
-        'workingHours': workingHours,
-      };
-      final response = await _dio.put(
-        '/barber/working-hours',
-        data: requestData,
-      );
-    } on DioException catch (e) {
-      rethrow;
-    } catch (e) {
-      rethrow;
-    }
+    final requestData = {
+      'workingHours': workingHours,
+    };
+    await _dio.put(
+      '/barber/working-hours',
+      data: requestData,
+    );
   }
 }
 

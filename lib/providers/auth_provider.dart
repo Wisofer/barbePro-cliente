@@ -4,12 +4,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/auth.dart';
 import '../models/user_profile.dart';
 import '../services/api/auth_service.dart';
 import '../services/api/barber_service.dart';
-import '../services/storage/token_storage.dart';
 import '../services/notification/flutter_remote_notifications.dart';
 import '../services/notification/notification_handler.dart';
+import '../services/storage/token_storage.dart';
 import '../utils/jwt_decoder.dart';
 import 'providers.dart';
 
@@ -23,6 +24,7 @@ class AuthState {
     this.isDemoMode = false,
     this.userToken,
     this.userProfile,
+    this.subscription,
     this.errorMessage,
   });
 
@@ -32,6 +34,7 @@ class AuthState {
   final bool isDemoMode;
   final String? userToken;
   final UserProfile? userProfile;
+  final SubscriptionDto? subscription;
   final String? errorMessage;
 
   String? get currentUserId => userProfile?.userId;
@@ -43,9 +46,11 @@ class AuthState {
     bool? isDemoMode,
     String? userToken,
     UserProfile? userProfile,
+    SubscriptionDto? subscription,
     String? errorMessage,
     bool clearError = false,
     bool clearProfile = false,
+    bool clearSubscription = false,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -54,6 +59,7 @@ class AuthState {
       isDemoMode: isDemoMode ?? this.isDemoMode,
       userToken: userToken ?? this.userToken,
       userProfile: clearProfile ? null : (userProfile ?? this.userProfile),
+      subscription: clearSubscription ? null : (subscription ?? this.subscription),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -216,62 +222,51 @@ class AuthNotifier extends StateNotifier<AuthState> {
       isDemoMode: false,
       userToken: null,
       clearProfile: true,
+      clearSubscription: true,
       errorMessage: null,
     );
   }
 
-  /// Iniciar sesión
-  Future<bool> login(String email, String password) async {
-    if (_authService == null) {
-      return false;
-    }
+  /// Aplica respuesta de login/register/google/apple al estado
+  void _applyLoginResponse(LoginResponse loginResponse) {
+    final user = loginResponse.user;
+    final barber = user.barber;
+    final profile = UserProfile(
+      userId: user.id.toString(),
+      userName: user.email,
+      role: user.role,
+      nombre: barber?.name ?? user.email,
+      apellido: '',
+      email: user.email,
+      phone: barber?.phone,
+    );
+    state = state.copyWith(
+      userToken: loginResponse.token,
+      isAuthenticated: true,
+      isLoading: false,
+      userProfile: profile,
+      subscription: user.subscription,
+    );
+  }
 
+  /// Ejecuta una acción de auth (login/register/google/apple) y aplica el resultado.
+  Future<bool> _performAuth(Future<LoginResponse> Function() action) async {
+    if (_authService == null) return false;
     state = state.copyWith(isLoading: true, clearError: true);
-
     try {
-      // Login usando el nuevo AuthService
-      final loginResponse = await _authService!.login(email, password);
-      
-      final token = loginResponse.token;
-      
-      if (token.isEmpty) {
+      final loginResponse = await action();
+      if (loginResponse.token.isEmpty) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: 'No se pudo recuperar el token de acceso.',
+          errorMessage: 'No se pudo completar la autenticación.',
         );
         return false;
       }
-
-      _dio.options.headers['Authorization'] = 'Bearer $token';
-
-      // Crear perfil desde los datos del login
-      final user = loginResponse.user;
-      final barber = user.barber;
-      
-      final profile = UserProfile(
-        userId: user.id.toString(),
-        userName: user.email,
-        role: user.role,
-        nombre: barber?.name ?? user.email,
-        apellido: '',
-        email: user.email,
-        phone: barber?.phone,
-      );
-
-      state = state.copyWith(
-        userToken: token,
-        isAuthenticated: true,
-        isLoading: false,
-        userProfile: profile,
-      );
-      
-      // ✅ Inicializar notificaciones remotas después del login exitoso
+      _dio.options.headers['Authorization'] = 'Bearer ${loginResponse.token}';
+      _applyLoginResponse(loginResponse);
       try {
         await _initializeNotifications();
-      } catch (e) {
-        // No fallar el login si las notificaciones fallan
-      }
-      
+      } catch (_) {}
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -282,6 +277,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     }
   }
+
+  /// Iniciar sesión (email/contraseña)
+  Future<bool> login(String email, String password) async =>
+      _performAuth(() => _authService!.login(email, password));
+
+  /// Registro (email/contraseña) — 1 mes de prueba
+  Future<bool> register(RegisterRequest request) async =>
+      _performAuth(() => _authService!.register(request));
+
+  /// Login con Google (Firebase ID token)
+  Future<bool> loginWithGoogle({
+    required String idToken,
+    String? name,
+    String? businessName,
+    String? phone,
+  }) async =>
+      _performAuth(() => _authService!.loginWithGoogle(
+            idToken: idToken,
+            name: name,
+            businessName: businessName,
+            phone: phone,
+          ));
+
+  /// Login con Apple (Firebase ID token)
+  Future<bool> loginWithApple({
+    required String idToken,
+    String? name,
+    String? businessName,
+    String? phone,
+  }) async =>
+      _performAuth(() => _authService!.loginWithApple(
+            idToken: idToken,
+            name: name,
+            businessName: businessName,
+            phone: phone,
+          ));
 
   /// Activar modo demo
   Future<void> enableDemoMode() async {
@@ -294,15 +325,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
       email: 'demo@barbenic.com',
       phone: '8888-8888',
     );
-
     state = state.copyWith(
       isAuthenticated: true,
       isDemoMode: true,
       isLoading: false,
       userToken: 'demo_token',
       userProfile: demoProfile,
+      subscription: SubscriptionDto(
+        trialEndsAt: null,
+        isProActive: true,
+        proActivatedAt: null,
+        status: 'Pro',
+        hasAccess: true,
+      ),
       errorMessage: null,
     );
+  }
+
+  /// Refrescar estado de suscripción (GET /api/barber/subscription)
+  Future<void> refreshSubscription() async {
+    if (!state.isAuthenticated || state.isDemoMode) return;
+    try {
+      final barberService = ref.read(barberServiceProvider);
+      final subscription = await barberService.getSubscription();
+      state = state.copyWith(subscription: subscription);
+    } catch (_) {}
   }
 
   /// Cerrar sesión
@@ -353,10 +400,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      // Solo intentar obtener perfil del barbero si es rol Barber
       final barberService = ref.read(barberServiceProvider);
       final barberProfile = await barberService.getProfile();
-      
       final profile = UserProfile(
         userId: barberProfile.id.toString(),
         userName: barberProfile.email ?? '',
@@ -366,8 +411,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: barberProfile.email,
         phone: barberProfile.phone,
       );
-      
       state = state.copyWith(userProfile: profile);
+      // Actualizar suscripción (Trial/Pro/Expired)
+      try {
+        final subscription = await barberService.getSubscription();
+        state = state.copyWith(subscription: subscription);
+      } catch (_) {}
       return true;
     } catch (e) {
       final message = e.toString();

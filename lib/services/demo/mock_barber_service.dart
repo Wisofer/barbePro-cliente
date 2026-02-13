@@ -1,3 +1,4 @@
+import '../../models/auth.dart';
 import '../../models/barber.dart';
 import '../../models/dashboard_barber.dart';
 import '../../models/finance.dart';
@@ -59,6 +60,17 @@ class MockBarberService {
       'url': 'https://barbepro.encuentrame.org/b/barberia-demo',
       'qrCode': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
     };
+  }
+
+  Future<SubscriptionDto> getSubscription() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return SubscriptionDto(
+      trialEndsAt: null,
+      isProActive: true,
+      proActivatedAt: null,
+      status: 'Pro',
+      hasAccess: true,
+    );
   }
 }
 

@@ -7,7 +7,10 @@ import '../../models/dashboard_barber.dart';
 import '../../services/api/barber_service.dart';
 import '../../utils/money_formatter.dart';
 import '../../utils/role_helper.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_refresh_provider.dart';
+import '../../services/storage/trial_card_storage.dart';
+import '../../widgets/trial_welcome_modal.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToAppointments;
@@ -31,11 +34,26 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
   String? _errorMessage;
   DateTime? _lastRefresh;
   final Set<int> _dismissedAppointmentIds = {}; // IDs de citas ocultas
+  /// Card de prueba: no mostrar hasta cargar de storage; si el usuario la cerró, no volver a mostrar.
+  bool _trialCardDismissed = true;
 
   @override
   void initState() {
     super.initState();
     _loadDashboard();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadTrialCardDismissed());
+  }
+
+  Future<void> _loadTrialCardDismissed() async {
+    final userId = ref.read(authNotifierProvider).currentUserId;
+    final dismissed = await TrialCardStorage.isDismissed(userId);
+    if (mounted) setState(() => _trialCardDismissed = dismissed);
+  }
+
+  Future<void> _dismissTrialCard() async {
+    final userId = ref.read(authNotifierProvider).currentUserId;
+    await TrialCardStorage.setDismissed(userId);
+    if (mounted) setState(() => _trialCardDismissed = true);
   }
 
   Future<void> refresh() async {
@@ -67,6 +85,8 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
     try {
       final service = ref.read(barberServiceProvider);
       final dashboard = await service.getDashboard();
+      // Actualizar estado de suscripción (Trial/Pro) al refrescar
+      await ref.read(authNotifierProvider.notifier).refreshSubscription();
       if (mounted) {
         setState(() {
           _dashboard = dashboard;
@@ -178,17 +198,23 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadDashboard,
-      color: accentColor,
-      child: Container(
-        color: bgColor,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            // Espacio superior para separar del header
+    final authState = ref.watch(authNotifierProvider);
+    final subscription = authState.subscription;
+    final showTrialOverlay = subscription != null &&
+        subscription.isTrial &&
+        !_trialCardDismissed;
+
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _loadDashboard,
+          color: accentColor,
+          child: Container(
+            color: bgColor,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            
             // Stats rápidas horizontales
             SliverToBoxAdapter(
               child: Padding(
@@ -235,6 +261,13 @@ class DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
       ),
+    ),
+        if (showTrialOverlay)
+          TrialWelcomeModal(
+            subscription: subscription,
+            onDismiss: _dismissTrialCard,
+          ),
+      ],
     );
   }
 

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:simple_icons/simple_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../providers/auth_provider.dart';
 import '../../main_theme.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/auth/social_auth_service.dart';
 import '../../services/storage/credentials_storage.dart';
 import '../../utils/audio_helper.dart';
-import 'package:iconsax/iconsax.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   static const String routeName = '/login';
@@ -25,6 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   bool _userFocused = false;
   bool _passFocused = false;
   bool _rememberCredentials = false;
+  bool _appleSignInAvailable = false;
 
   final _formKey = GlobalKey<FormState>();
   final _userController = TextEditingController();
@@ -32,6 +36,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   final _userFocus = FocusNode();
   final _passFocus = FocusNode();
   final _credentialsStorage = CredentialsStorage();
+  final _socialAuth = SocialAuthService();
   late AnimationController _animationController;
 
   @override
@@ -44,6 +49,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       duration: const Duration(seconds: 2),
     )..repeat();
     _loadSavedCredentials();
+    _socialAuth.isAppleSignInAvailable().then((v) {
+      if (mounted) setState(() => _appleSignInAvailable = v);
+    });
   }
 
   @override
@@ -116,6 +124,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       setState(() {
         _errorMessage = 'Error de conexión';
       });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithSocial(
+    Future<String> Function() getIdToken,
+    Future<bool> Function(String idToken) loginWithToken,
+    String fallbackError,
+  ) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final idToken = await getIdToken();
+      final success = await loginWithToken(idToken);
+      if (!mounted) return;
+      if (!success) {
+        final authState = ref.read(authNotifierProvider);
+        AudioHelper.playError();
+        setState(() => _errorMessage = authState.errorMessage ?? fallbackError);
+      } else {
+        AudioHelper.playSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        AudioHelper.playError();
+        setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -452,97 +490,160 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                             ),
                           ),
 
-                          SizedBox(height: isSmallScreen ? 20 : 24),
+                          SizedBox(height: 12),
 
-                          // Texto clickeable para ver demo
-                          Center(
-                            child: GestureDetector(
-                              onTap: _isLoading ? null : _enterDemoMode,
-                              child: Text(
-                                'Ver demo',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: _isLoading ? mutedColor.withAlpha(100) : accentColor,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                            ),
-                          ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: isSmallScreen ? 24 : 32),
-
-                      // Footer
-                      Column(
-                        children: [
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: isSmallScreen ? 6 : 8,
-                            runSpacing: isSmallScreen ? 8 : 10,
-                            children: [
-                              _buildFeatureBadge(Iconsax.calendar_2, 'Citas', accentColor, mutedColor, borderColor),
-                              _buildFeatureBadge(Iconsax.scissor, 'Servicios', accentColor, mutedColor, borderColor),
-                              _buildFeatureBadge(Iconsax.wallet, 'Finanzas', accentColor, mutedColor, borderColor),
-                            ],
-                          ),
-                          SizedBox(height: isSmallScreen ? 20 : 24),
+                          // "o continúa con" + iconos Google y Apple en una línea (compacto)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Desarrollado por ',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: mutedColor.withAlpha(150),
-                                  letterSpacing: 1.2,
+                              Expanded(child: Divider(color: borderColor, thickness: 1)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(
+                                  'o continúa con',
+                                  style: GoogleFonts.inter(fontSize: 11, color: mutedColor),
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () async {
-                                  try {
-                                    final uri = Uri.parse('https://www.cowib.es');
-                                    await launchUrl(
-                                      uri,
-                                      mode: LaunchMode.externalApplication,
-                                    );
-                                  } catch (e) {
-                                    // Si no se puede abrir, intentar con el navegador por defecto
-                                    try {
-                                      final uri = Uri.parse('https://www.cowib.es');
-                                      await launchUrl(uri, mode: LaunchMode.platformDefault);
-                                    } catch (e2) {
-                                      // Error al abrir URL
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('No se pudo abrir la página: ${e2.toString()}'),
-                                            backgroundColor: const Color(0xFFEF4444),
+                              Expanded(child: Divider(color: borderColor, thickness: 1)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Material(
+                                color: Colors.white,
+                                shape: const CircleBorder(),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: _isLoading
+                                      ? null
+                                      : () => _signInWithSocial(
+                                            _socialAuth.getGoogleIdToken,
+                                            (id) => ref.read(authNotifierProvider.notifier).loginWithGoogle(idToken: id),
+                                            'Error con Google',
                                           ),
-                                        );
-                                      }
-                                    }
-                                  }
-                                },
-                                child: Text(
-                                  'COWIB',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: accentColor,
-                                    letterSpacing: 1.2,
+                                  customBorder: const CircleBorder(),
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: borderColor),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      SimpleIcons.google,
+                                      size: 22,
+                                      color: SimpleIconColors.google,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_appleSignInAvailable) ...[
+                                const SizedBox(width: 12),
+                                Material(
+                                  color: Colors.white,
+                                  shape: const CircleBorder(),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: InkWell(
+                                    onTap: _isLoading
+                                        ? null
+                                        : () => _signInWithSocial(
+                                              _socialAuth.getAppleIdToken,
+                                              (id) => ref.read(authNotifierProvider.notifier).loginWithApple(idToken: id),
+                                              'Error con Apple',
+                                            ),
+                                    customBorder: const CircleBorder(),
+                                    child: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: borderColor),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        SimpleIcons.apple,
+                                        size: 22,
+                                        color: SimpleIconColors.apple,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Center(
+                                child: GestureDetector(
+                                  onTap: _isLoading ? null : () => Navigator.of(context).pushNamed(RegisterScreen.routeName),
+                                  child: Text(
+                                    '¿No tienes cuenta? Regístrate',
+                                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: accentColor),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Center(
+                                child: GestureDetector(
+                                  onTap: _isLoading ? null : _enterDemoMode,
+                                  child: Text(
+                                    'Ver demo',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: _isLoading ? mutedColor.withAlpha(100) : accentColor,
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                          ],
+                        ),
                       ),
 
-                      SizedBox(height: isSmallScreen ? 24 : (screenHeight < 700 ? 32 : 40)),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
+
+                      // Footer compacto
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _buildFeatureBadge(Iconsax.calendar_2, 'Citas', accentColor, mutedColor, borderColor),
+                          _buildFeatureBadge(Iconsax.scissor, 'Servicios', accentColor, mutedColor, borderColor),
+                          _buildFeatureBadge(Iconsax.wallet, 'Finanzas', accentColor, mutedColor, borderColor),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () async {
+                          try {
+                            final uri = Uri.parse('https://www.cowib.es');
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          } catch (_) {
+                            try {
+                              await launchUrl(Uri.parse('https://www.cowib.es'), mode: LaunchMode.platformDefault);
+                            } catch (e2) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('No se pudo abrir: $e2'), backgroundColor: const Color(0xFFEF4444)),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        child: Text(
+                          'Desarrollado por COWIB',
+                          style: GoogleFonts.inter(fontSize: 9, color: mutedColor.withAlpha(180)),
+                        ),
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 24),
                     ],
                   ),
                 ),
@@ -657,24 +758,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
   Widget _buildFeatureBadge(IconData icon, String label, Color accentColor, Color mutedColor, Color borderColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: accentColor.withAlpha(10),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: accentColor.withAlpha(30)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: accentColor, size: 14),
+          Icon(icon, color: accentColor, size: 12),
           const SizedBox(width: 4),
           Text(
             label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: accentColor,
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.inter(fontSize: 10, color: accentColor, fontWeight: FontWeight.w600),
           ),
         ],
       ),
