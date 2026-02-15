@@ -183,7 +183,7 @@ class _TrialWelcomeModalState extends State<TrialWelcomeModal>
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  '¡Bienvenido a BarbeNic!',
+                                                  '¡Tu prueba gratuita ya está activa! 🎉',
                                                   style: GoogleFonts.inter(
                                                     fontSize: 18,
                                                     fontWeight: FontWeight.w800,
@@ -194,8 +194,8 @@ class _TrialWelcomeModalState extends State<TrialWelcomeModal>
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   dateStr.isEmpty
-                                                      ? 'Tienes 1 mes gratis'
-                                                      : 'Todo desbloqueado hasta el $dateStr',
+                                                      ? 'Tu mes gratis con BarbeNic'
+                                                      : 'Tu mes gratis hasta el $dateStr',
                                                   style: GoogleFonts.inter(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w600,
@@ -214,7 +214,7 @@ class _TrialWelcomeModalState extends State<TrialWelcomeModal>
                                   child: Column(
                                     children: [
                                       Text(
-                                        'Ya puedes usar todas las funciones: citas, servicios, finanzas y más. Cuando termine tu mes, te ayudamos a seguir con BarbeNic sin complicaciones.',
+                                        'Disfruta de todas las funciones de BarbeNic durante tu mes gratis. Si más adelante quieres activar Pro, el equipo te puede ayudar.',
                                         style: GoogleFonts.inter(
                                           fontSize: 14,
                                           height: 1.45,
@@ -236,7 +236,7 @@ class _TrialWelcomeModalState extends State<TrialWelcomeModal>
                                             ),
                                           ),
                                           child: Text(
-                                            'Empezar',
+                                            '¡A disfrutar! 🚀',
                                             style: GoogleFonts.inter(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
