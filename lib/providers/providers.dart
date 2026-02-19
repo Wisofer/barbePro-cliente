@@ -7,6 +7,10 @@ import 'package:system_movil/services/storage/fcm_token_storage.dart';
 import 'package:system_movil/services/notification/fcm_api.dart';
 import 'package:system_movil/providers/network/error_interceptor.dart';
 import 'package:system_movil/providers/network/token_refresh_interceptor.dart';
+import 'package:system_movil/services/auth/social_auth_service.dart';
+
+/// Servicio de autenticación social (Google, Apple). Usado en login y en logout para limpiar sesión.
+final socialAuthServiceProvider = Provider<SocialAuthService>((ref) => SocialAuthService());
 
 /// Provides a singleton TokenStorage (secure storage for access/refresh tokens)
 final tokenStorageProvider = Provider<TokenStorage>((ref) {

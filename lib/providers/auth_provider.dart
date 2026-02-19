@@ -358,10 +358,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _tokenStorage.clear();
     } catch (_) {
       // Ignorar errores
-    } finally {
-      await _clearAuthState();
-      state = AuthState.initial().copyWith(isInitialized: true);
     }
+    try {
+      await ref.read(socialAuthServiceProvider).signOutFromGoogleAndFirebase();
+    } catch (_) {
+      // Ignorar si no había sesión social
+    }
+    await _clearAuthState();
+    state = AuthState.initial().copyWith(isInitialized: true);
   }
 
   /// Verificar si hay un token válido

@@ -74,4 +74,16 @@ class SocialAuthService {
   Future<bool> isAppleSignInAvailable() async {
     return await SignInWithApple.isAvailable();
   }
+
+  /// Cierra la sesión de Google y Firebase. Debe llamarse al cerrar sesión en la app
+  /// para que la próxima vez que el usuario pulse "Iniciar sesión con Google"
+  /// pueda elegir cuenta en lugar de entrar con la anterior.
+  Future<void> signOutFromGoogleAndFirebase() async {
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+    try {
+      await _firebaseAuth.signOut();
+    } catch (_) {}
+  }
 }

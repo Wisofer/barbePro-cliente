@@ -159,6 +159,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     }
   }
 
+  void _onAppleSignInTap(BuildContext context, Color borderColor, Color mutedColor) {
+    if (_appleSignInAvailable) {
+      _signInWithSocial(
+        _socialAuth.getAppleIdToken,
+        (id) => ref.read(authNotifierProvider.notifier).loginWithApple(idToken: id),
+        'Error con Apple',
+      );
+      return;
+    }
+    // En Android (y donde no esté disponible), mostrar mensaje claro
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Iniciar sesión con Apple',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Iniciar sesión con Apple no está disponible en este dispositivo. '
+          'Puedes usar Google o tu correo y contraseña para acceder a tu cuenta.',
+          style: GoogleFonts.inter(fontSize: 14, color: mutedColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Entendido', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _enterDemoMode() async {
     setState(() {
       _isLoading = true;
@@ -540,38 +573,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                   ),
                                 ),
                               ),
-                              if (_appleSignInAvailable) ...[
-                                const SizedBox(width: 12),
-                                Material(
-                                  color: Colors.white,
-                                  shape: const CircleBorder(),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: InkWell(
-                                    onTap: _isLoading
-                                        ? null
-                                        : () => _signInWithSocial(
-                                              _socialAuth.getAppleIdToken,
-                                              (id) => ref.read(authNotifierProvider.notifier).loginWithApple(idToken: id),
-                                              'Error con Apple',
-                                            ),
-                                    customBorder: const CircleBorder(),
-                                    child: Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: borderColor),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Icon(
-                                        SimpleIcons.apple,
-                                        size: 22,
-                                        color: SimpleIconColors.apple,
-                                      ),
+                              const SizedBox(width: 12),
+                              Material(
+                                color: Colors.white,
+                                shape: const CircleBorder(),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: _isLoading
+                                      ? null
+                                      : () => _onAppleSignInTap(context, borderColor, mutedColor),
+                                  customBorder: const CircleBorder(),
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: borderColor),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      SimpleIcons.apple,
+                                      size: 22,
+                                      color: SimpleIconColors.apple,
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
