@@ -65,7 +65,7 @@ class PrivacySecurityScreen extends StatelessWidget {
             ),
             SizedBox(height: w < 360 ? 6 : 8),
             Text(
-              'Última actualización: información general para usuarios de BarbePro. '
+              'Última actualización: información general para usuarios de BarbeNic. '
               'Si necesitas el texto legal completo, tu equipo puede enlazar aquí la política publicada en la web.',
               style: GoogleFonts.inter(
                 fontSize: introBodySize,
@@ -83,7 +83,7 @@ class PrivacySecurityScreen extends StatelessWidget {
               icon: Iconsax.shield_tick,
               title: 'Compromiso con la privacidad',
               body:
-                  'BarbePro está diseñada para gestionar tu negocio de forma profesional. '
+                  'BarbeNic está diseñada para gestionar tu negocio de forma profesional. '
                   'Tratamos los datos personales y de tu barbería con fines legítimos: '
                   'prestar el servicio, autenticación, soporte y mejoras de la aplicación, '
                   'siempre respetando la normativa aplicable.',
@@ -145,7 +145,7 @@ class PrivacySecurityScreen extends StatelessWidget {
               body:
                   'Para ejercer derechos de privacidad o preguntas sobre protección de datos, '
                   'contacta al responsable del tratamiento indicado en tu contrato o web oficial '
-                  'de BarbePro, o a soporte a través de los canales de ayuda de la aplicación.',
+                  'de BarbeNic, o a soporte a través de los canales de ayuda de la aplicación.',
             ),
                     ],
                   ),

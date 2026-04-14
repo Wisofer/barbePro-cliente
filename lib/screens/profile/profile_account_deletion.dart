@@ -69,7 +69,7 @@ Future<bool?> showAccountDeletionRequestDialog(
       ),
       content: SingleChildScrollView(
         child: Text(
-          'Gracias por usar BarbePro.\n\n'
+          'Gracias por usar BarbeNic.\n\n'
           'Tu cuenta no desaparece al instante: tienes un periodo de gracia de '
           '$days días antes del borrado definitivo.\n\n'
           'Al pulsar «Programar eliminación», quedará programada la solicitud y '

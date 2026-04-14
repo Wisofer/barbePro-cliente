@@ -45,8 +45,6 @@ app.*.map.json
 /android/app/release
 
 # Secrets and API Keys
-# iOS - Info.plist may contain API keys
-ios/Runner/Info.plist
 # Android - Google Services (contains API keys if using Firebase)
 android/app/google-services.json
 # Android - Keystore properties (already in android/.gitignore but adding here too)

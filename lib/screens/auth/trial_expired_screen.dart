@@ -62,7 +62,7 @@ class TrialExpiredScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Tu prueba gratuita ha finalizado. Activa BarbePro Pro para seguir usando todas las funciones, '
+                  'Tu prueba gratuita ha finalizado. Activa BarbeNic Pro para seguir usando todas las funciones, '
                   'o si ya pagaste, el equipo activará tu cuenta pronto.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(

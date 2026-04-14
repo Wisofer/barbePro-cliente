@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -85,7 +87,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       final errorData = e.response?.data;
-      
+
       String message;
       if (errorData is Map<String, dynamic>) {
         message = errorData['message'] ?? e.message ?? 'Error desconocido';
@@ -94,16 +96,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       } else {
         message = e.message ?? 'Error desconocido';
       }
-      
+
       if (statusCode == 404) {
-        message = 'Endpoint no encontrado. Verifica la configuración del servidor.';
+        message =
+            'Endpoint no encontrado. Verifica la configuración del servidor.';
       }
-      
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = statusCode != null ? 'Error $statusCode: $message' : message;
+          _errorMessage = statusCode != null
+              ? 'Error $statusCode: $message'
+              : message;
         });
       }
     } catch (e) {
@@ -196,7 +200,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (_accountDeletionBusy) return;
 
     setState(() => _accountDeletionBusy = true);
-    await ref.read(authNotifierProvider.notifier).refreshAccountDeletionStatus();
+    await ref
+        .read(authNotifierProvider.notifier)
+        .refreshAccountDeletionStatus();
     if (!mounted) return;
     setState(() => _accountDeletionBusy = false);
 
@@ -205,13 +211,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final scheduledFor = profile?.accountDeletionScheduledForUtc;
 
     if (pending) {
-      final wantCancel =
-          await showAccountDeletionPendingDialog(context, scheduledFor: scheduledFor);
+      final wantCancel = await showAccountDeletionPendingDialog(
+        context,
+        scheduledFor: scheduledFor,
+      );
       if (wantCancel != true || !mounted) return;
 
       setState(() => _accountDeletionBusy = true);
-      final err =
-          await ref.read(authNotifierProvider.notifier).cancelAccountDeletion();
+      final err = await ref
+          .read(authNotifierProvider.notifier)
+          .cancelAccountDeletion();
       if (!mounted) return;
       setState(() => _accountDeletionBusy = false);
 
@@ -232,8 +241,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (confirm != true || !mounted) return;
 
     setState(() => _accountDeletionBusy = true);
-    final err =
-        await ref.read(authNotifierProvider.notifier).requestAccountDeletion();
+    final err = await ref
+        .read(authNotifierProvider.notifier)
+        .requestAccountDeletion();
     if (!mounted) return;
     setState(() => _accountDeletionBusy = false);
 
@@ -250,6 +260,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   static const int _maxPhotoBytes = 10 * 1024 * 1024;
+
+  List<int> _normalizePhotoOrientation(List<int> bytes, String extension) {
+    // Las fotos de cámara suelen venir con metadatos EXIF de orientación.
+    // "Horneamos" la orientación para evitar que el backend/cliente la muestre girada.
+    final decoded = img.decodeImage(Uint8List.fromList(bytes));
+    if (decoded == null) return bytes;
+
+    final baked = img.bakeOrientation(decoded);
+    if (extension == 'png') {
+      return img.encodePng(baked);
+    }
+    if (extension == 'jpg' || extension == 'jpeg') {
+      return img.encodeJpg(baked, quality: 85);
+    }
+    return bytes;
+  }
 
   void _showProfilePhotoFullScreen(String imageUrl) {
     Navigator.of(context).push(
@@ -272,7 +298,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  (loadingProgress.expectedTotalBytes ?? 1)
+                                    (loadingProgress.expectedTotalBytes ?? 1)
                               : null,
                           color: const Color(0xFF10B981),
                         ),
@@ -280,7 +306,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     },
                     errorBuilder: (context, error, stackTrace) {
                       return const Center(
-                        child: Icon(Iconsax.gallery_slash, size: 64, color: Colors.white54),
+                        child: Icon(
+                          Iconsax.gallery_slash,
+                          size: 64,
+                          color: Colors.white54,
+                        ),
                       );
                     },
                   ),
@@ -293,7 +323,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     padding: const EdgeInsets.all(12),
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Iconsax.close_circle, color: Colors.white, size: 32),
+                      icon: const Icon(
+                        Iconsax.close_circle,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.black45,
                       ),
@@ -309,7 +343,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickAndUploadProfilePhoto() async {
-    if (!RoleHelper.isBarber(ref) || ref.read(authNotifierProvider).isDemoMode) {
+    if (!RoleHelper.isBarber(ref) ||
+        ref.read(authNotifierProvider).isDemoMode) {
       return;
     }
     final source = await showModalBottomSheet<ImageSource>(
@@ -385,7 +420,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         return;
       }
 
-      final b64 = base64Encode(bytes);
+      final normalizedBytes = _normalizePhotoOrientation(bytes, ext);
+      if (normalizedBytes.length > _maxPhotoBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('La imagen procesada no debe superar 10 MB.'),
+              backgroundColor: Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      final b64 = base64Encode(normalizedBytes);
       final service = ref.read(barberServiceProvider);
       final updated = await service.uploadProfilePhoto(b64);
       await BarberProfileCache.saveImageUrl(updated.profileImageUrl);
@@ -418,13 +467,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
+    final textColor = isDark
+        ? const Color(0xFFFAFAFA)
+        : const Color(0xFF1F2937);
+    final mutedColor = isDark
+        ? const Color(0xFF71717A)
+        : const Color(0xFF6B7280);
     final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
-    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
-    final sectionHeaderColor =
-        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
+    final borderColor = isDark
+        ? const Color(0xFF38383A)
+        : const Color(0xFFC6C6C8);
+    final groupedBg = isDark
+        ? const Color(0xFF000000)
+        : const Color(0xFFF2F2F7);
+    final sectionHeaderColor = isDark
+        ? const Color(0xFF8E8E93)
+        : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
     if (_isLoading) {
@@ -436,7 +494,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final authForDeletion = ref.watch(authNotifierProvider);
       final userProfile = authForDeletion.userProfile;
       final p = ProfilePalette.of(context);
-      
+
       return RefreshIndicator(
         onRefresh: _loadProfile,
         color: accentColor,
@@ -454,7 +512,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                     clipBehavior: Clip.antiAlias,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 18,
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -466,10 +527,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [
-                                  accentColor,
-                                  const Color(0xFF059669),
-                                ],
+                                colors: [accentColor, const Color(0xFF059669)],
                               ),
                             ),
                             child: ClipOval(
@@ -503,7 +561,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                 ),
                                 if (userProfile?.email != null &&
-                                    (userProfile?.email?.isNotEmpty ?? false)) ...[
+                                    (userProfile?.email?.isNotEmpty ??
+                                        false)) ...[
                                   const SizedBox(height: 4),
                                   Text(
                                     userProfile?.email ?? '',
@@ -624,7 +683,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     tiles: [
                       p.deleteAccountOption(
                         pending: userProfile?.accountDeletionPending == true,
-                        scheduledFor: userProfile?.accountDeletionScheduledForUtc,
+                        scheduledFor:
+                            userProfile?.accountDeletionScheduledForUtc,
                         formatDate: formatProfileAccountDeletionDate,
                         onTap: _onAccountDeletionTap,
                       ),
@@ -691,15 +751,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: ProfileHeader(
                     profile: _profile!,
                     onProfileUpdated: _loadProfile,
-                    onPhotoTap: RoleHelper.isBarber(ref) &&
+                    onPhotoTap:
+                        RoleHelper.isBarber(ref) &&
                             !ref.watch(authNotifierProvider).isDemoMode
                         ? _pickAndUploadProfilePhoto
                         : null,
-                    onPhotoViewTap: RoleHelper.isBarber(ref) &&
+                    onPhotoViewTap:
+                        RoleHelper.isBarber(ref) &&
                             _profile!.profileImageUrl != null &&
                             _profile!.profileImageUrl!.isNotEmpty
-                        ? () =>
-                            _showProfilePhotoFullScreen(_profile!.profileImageUrl!)
+                        ? () => _showProfilePhotoFullScreen(
+                            _profile!.profileImageUrl!,
+                          )
                         : null,
                     textColor: textColor,
                     mutedColor: mutedColor,
@@ -719,7 +782,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF4E6),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFFB84D), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFFFB84D),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -773,7 +839,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       final updated = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => EditProfileScreen(profile: _profile!),
+                          builder: (context) =>
+                              EditProfileScreen(profile: _profile!),
                         ),
                       );
                       if (updated == true) {
@@ -824,7 +891,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => QrCodeScreen(profile: _profile!),
+                            builder: (context) =>
+                                QrCodeScreen(profile: _profile!),
                           ),
                         );
                       },
@@ -1057,9 +1125,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   tiles: [
                     p.deleteAccountOption(
                       pending:
-                          authForDeletion.userProfile?.accountDeletionPending == true,
+                          authForDeletion.userProfile?.accountDeletionPending ==
+                          true,
                       scheduledFor: authForDeletion
-                          .userProfile?.accountDeletionScheduledForUtc,
+                          .userProfile
+                          ?.accountDeletionScheduledForUtc,
                       formatDate: formatProfileAccountDeletionDate,
                       onTap: _onAccountDeletionTap,
                     ),

@@ -23,7 +23,7 @@ class ProfilePalette {
   static const Color demoAccent = Color(0xFFFFB84D);
   static const Color mutedButton = Color(0xFF6B7280);
   static const Color success = Color(0xFF10B981);
-  /// Marca BarbePro (snackbars, acentos fuera de [ProfilePalette.of]).
+  /// Marca BarbeNic (snackbars, acentos fuera de [ProfilePalette.of]).
   static const Color accentBrand = Color(0xFF10B981);
 
   factory ProfilePalette.of(BuildContext context) {
