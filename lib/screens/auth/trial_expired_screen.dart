@@ -52,7 +52,9 @@ class TrialExpiredScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Tu periodo de prueba terminó',
+                  // Original text:
+                  // 'Tu periodo de prueba terminó'
+                  'Estado de cuenta',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 24,
@@ -62,8 +64,11 @@ class TrialExpiredScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Tu prueba gratuita ha finalizado. Activa BarbeNic Pro para seguir usando todas las funciones, '
-                  'o si ya pagaste, el equipo activará tu cuenta pronto.',
+                  // Original text:
+                  // 'Tu prueba gratuita ha finalizado. Activa BarbeNic Pro para seguir usando todas las funciones, '
+                  // 'o si ya pagaste, el equipo activará tu cuenta pronto.',
+                  'Tu acceso requiere revisión del equipo. Si necesitas ayuda, '
+                  'contáctanos desde soporte de cuenta.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 15,

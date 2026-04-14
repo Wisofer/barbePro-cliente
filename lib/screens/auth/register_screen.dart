@@ -85,122 +85,91 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     const accentColor = Color(0xFF10B981);
-    const accentLight = Color(0xFF34D399);
     const bgColor = Colors.white;
-    const cardColor = Colors.white;
-    const textColor = Color(0xFF1F2937);
+    const textColor = Color(0xFF111827);
     const mutedColor = Color(0xFF6B7280);
-    const borderColor = Color(0xFFD1D5DB);
+    const borderColor = Color(0xFFE5E7EB);
 
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 360;
     final horizontalPadding = isSmallScreen ? 20.0 : 24.0;
-    final fieldSpacing = isSmallScreen ? 10.0 : 12.0;
-    final buttonHeight = isSmallScreen ? 48.0 : 52.0;
+    final fieldSpacing = isSmallScreen ? 12.0 : 14.0;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemMovilTheme.getStatusBarStyle(false),
       child: Scaffold(
         backgroundColor: bgColor,
-        body: Stack(
-          children: [
-            // Fondo igual al login
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      accentColor.withAlpha(5),
-                      accentLight.withAlpha(10),
-                      Colors.white,
-                    ],
-                  ),
-                ),
-              ),
+        appBar: AppBar(
+          title: Text(
+            'Crear cuenta',
+            style: GoogleFonts.inter(
+              fontSize: isSmallScreen ? 18 : 20,
+              fontWeight: FontWeight.w600,
+              color: textColor,
             ),
-
-            SafeArea(
-              child: Column(
-                children: [
-                  // Header compacto: atrás + título + 1 mes gratis
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(8, 8, 8, 0),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: IconButton(
-                            icon: const Icon(Iconsax.arrow_left_2),
-                            onPressed: () => Navigator.of(context).pop(),
-                            color: textColor,
-                            style: IconButton.styleFrom(
-                              backgroundColor: cardColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+          ),
+          elevation: 0,
+          backgroundColor: bgColor,
+          foregroundColor: textColor,
+          scrolledUnderElevation: 0,
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              8,
+              horizontalPadding,
+              24,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                             Text(
-                              'Crear cuenta',
+                              'Registra tu barberia',
+                              textAlign: TextAlign.left,
                               style: GoogleFonts.inter(
-                                fontSize: isSmallScreen ? 18 : 20,
+                                fontSize: isSmallScreen ? 34 : 36,
                                 fontWeight: FontWeight.w800,
                                 color: textColor,
+                                height: 1.08,
+                                letterSpacing: -0.8,
                               ),
-                              textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 2),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Iconsax.gift, size: 14, color: accentColor),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '1 mes de prueba gratis',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: mutedColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 6),
+                            Text(
+                              'Completa tus datos para empezar.',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: mutedColor,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                        child: Form(
-                          key: _formKey,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 400),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
+                            const SizedBox(height: 20),
                             if (_errorMessage != null) ...[
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFEF2F2),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFFECACA)),
+                                  border: Border.all(
+                                    color: const Color(0xFFFECACA),
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Iconsax.warning_2, color: Color(0xFFDC2626), size: 18),
+                                    const Icon(
+                                      Iconsax.warning_2,
+                                      color: Color(0xFFDC2626),
+                                      size: 18,
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -216,107 +185,83 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ),
                               SizedBox(height: fieldSpacing),
                             ],
-
-                            // Card blanca con el formulario (igual estilo que login)
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                              decoration: BoxDecoration(
-                                color: cardColor,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: accentColor.withAlpha(12),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.black.withAlpha(4),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _buildField(
-                                    'Nombre',
-                                    _nameController,
-                                    Iconsax.user,
-                                    accentColor,
-                                    borderColor,
-                                    mutedColor,
-                                    textColor,
-                                    validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
-                                  ),
-                                  SizedBox(height: fieldSpacing),
-                                  _buildField(
-                                    'Email',
-                                    _emailController,
-                                    Iconsax.sms,
-                                    accentColor,
-                                    borderColor,
-                                    mutedColor,
-                                    textColor,
-                                    hintText: 'tu@email.com',
-                                    keyboardType: TextInputType.emailAddress,
-                                    validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
-                                  ),
-                                  SizedBox(height: fieldSpacing),
-                                  _buildField(
-                                    'Contraseña',
-                                    _passwordController,
-                                    Iconsax.lock,
-                                    accentColor,
-                                    borderColor,
-                                    mutedColor,
-                                    textColor,
-                                    hintText: 'Mín. 6 caracteres',
-                                    obscureText: _obscurePassword,
-                                    validator: (v) {
-                                      if (v == null || v.length < 6) return 'Mín. 6 caracteres';
-                                      return null;
-                                    },
-                                    suffix: GestureDetector(
-                                      onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                                      child: Icon(
-                                        _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                                        color: mutedColor,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: fieldSpacing),
-                                  _buildField(
-                                    'Teléfono',
-                                    _phoneController,
-                                    Iconsax.call,
-                                    accentColor,
-                                    borderColor,
-                                    mutedColor,
-                                    textColor,
-                                    keyboardType: TextInputType.phone,
-                                    validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
-                                  ),
-                                  SizedBox(height: fieldSpacing),
-                                  _buildField(
-                                    'Negocio (opcional)',
-                                    _businessNameController,
-                                    Iconsax.shop,
-                                    accentColor,
-                                    borderColor,
-                                    mutedColor,
-                                    textColor,
-                                    hintText: 'Ej. Barbería Central',
-                                  ),
-                                ],
+                            _buildField(
+                              'Nombre*',
+                              _nameController,
+                              Iconsax.user,
+                              borderColor,
+                              mutedColor,
+                              textColor,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Requerido'
+                                  : null,
+                            ),
+                            SizedBox(height: fieldSpacing),
+                            _buildField(
+                              'Correo*',
+                              _emailController,
+                              Iconsax.sms,
+                              borderColor,
+                              mutedColor,
+                              textColor,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Requerido'
+                                  : null,
+                            ),
+                            SizedBox(height: fieldSpacing),
+                            _buildField(
+                              'Telefono*',
+                              _phoneController,
+                              Iconsax.call,
+                              borderColor,
+                              mutedColor,
+                              textColor,
+                              keyboardType: TextInputType.phone,
+                              validator: (v) => v == null || v.trim().isEmpty
+                                  ? 'Requerido'
+                                  : null,
+                            ),
+                            SizedBox(height: fieldSpacing),
+                            _buildField(
+                              'Contrasena*',
+                              _passwordController,
+                              Iconsax.lock,
+                              borderColor,
+                              mutedColor,
+                              textColor,
+                              obscureText: _obscurePassword,
+                              validator: (v) {
+                                if (v == null || v.length < 6) {
+                                  return 'Min. 6 caracteres';
+                                }
+                                return null;
+                              },
+                              suffix: IconButton(
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Iconsax.eye_slash
+                                      : Iconsax.eye,
+                                  color: mutedColor,
+                                  size: 20,
+                                ),
                               ),
                             ),
-
+                            SizedBox(height: fieldSpacing),
+                            _buildField(
+                              'Nombre de la barberia',
+                              _businessNameController,
+                              Iconsax.shop,
+                              borderColor,
+                              mutedColor,
+                              textColor,
+                            ),
                             SizedBox(height: isSmallScreen ? 18 : 20),
-
                             SizedBox(
-                              height: buttonHeight,
+                              height: 58,
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _submitForm,
                                 style: ElevatedButton.styleFrom(
@@ -324,7 +269,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(18),
                                   ),
                                 ),
                                 child: _isLoading
@@ -333,53 +278,52 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         width: 22,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2.5,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
-                                    : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'Crear cuenta',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          const Icon(Iconsax.arrow_right_3, size: 20),
-                                        ],
+                                    : Text(
+                                        'Crear cuenta',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                               ),
                             ),
-
-                            SizedBox(height: 14),
-
-                            Center(
-                              child: GestureDetector(
-                                onTap: _isLoading ? null : () => Navigator.of(context).pop(),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              height: 58,
+                              child: OutlinedButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: borderColor.withAlpha(180),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
                                 child: Text(
-                                  '¿Ya tienes cuenta? Iniciar sesión',
+                                  'Ya tengo cuenta',
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
                                     color: accentColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 24),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -389,66 +333,77 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     String label,
     TextEditingController controller,
     IconData icon,
-    Color accentColor,
     Color borderColor,
     Color mutedColor,
     Color textColor, {
-    String? hintText,
     TextInputType? keyboardType,
     bool obscureText = false,
     String? Function(String?)? validator,
     Widget? suffix,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: textColor,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 16,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+        validator: validator,
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          color: textColor,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.inter(
+            fontSize: 14,
+            color: mutedColor,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Icon(icon, color: const Color(0xFF6B7280), size: 20),
+          suffixIcon: suffix != null
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: suffix,
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.transparent,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide(color: borderColor.withAlpha(40)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(
+              color: Color(0xFF10B981),
+              width: 1.3,
+            ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFDC2626)),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 18,
           ),
         ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          obscureText: obscureText,
-          validator: validator,
-          style: GoogleFonts.inter(fontSize: 14, color: textColor, fontWeight: FontWeight.w500),
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: GoogleFonts.inter(fontSize: 13, color: mutedColor.withAlpha(180)),
-            prefixIcon: Icon(icon, color: mutedColor, size: 20),
-            suffixIcon: suffix != null
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: suffix,
-                  )
-                : null,
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: borderColor.withAlpha(80)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFDC2626)),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

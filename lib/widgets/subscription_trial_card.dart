@@ -5,6 +5,10 @@ import 'package:iconsax/iconsax.dart';
 import '../providers/auth_provider.dart';
 
 /// Card que muestra "Tienes 1 mes de prueba hasta [fecha]". Solo visible cuando status == Trial.
+// APPLE REVIEW FLAG:
+// Set to false to restore subscription/trial card visibility.
+final bool kHideSubscriptionTrialCardForAppleReview = true;
+
 class SubscriptionTrialCard extends ConsumerWidget {
   const SubscriptionTrialCard({super.key});
 
@@ -18,6 +22,11 @@ class SubscriptionTrialCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Original behavior: evaluate auth subscription and render trial card.
+    if (kHideSubscriptionTrialCardForAppleReview) {
+      return const SizedBox.shrink();
+    }
+
     final authState = ref.watch(authNotifierProvider);
     final subscription = authState.subscription;
 

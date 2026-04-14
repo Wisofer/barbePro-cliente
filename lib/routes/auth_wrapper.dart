@@ -8,6 +8,10 @@ import '../screens/auth/trial_expired_screen.dart';
 import '../screens/home_screen.dart';
 import '../widgets/splash_screen.dart';
 
+// APPLE REVIEW FLAG:
+// Set to false to restore trial/subscription blocking flow.
+final bool kDisableTrialBlockingForAppleReview = true;
+
 class AuthWrapper extends StatefulWidget {
   static const String routeName = '/auth-wrapper';
 
@@ -62,7 +66,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
           final sub = authState.subscription;
           final subExpired = sub != null && sub.isExpired && !sub.hasAccess;
           final profileExpired = profile != null && profile.isTrialExpired;
-          if (trialFlag || subExpired || profileExpired) {
+          // Original behavior (restore after Apple review):
+          // if (trialFlag || subExpired || profileExpired) {
+          //   return const TrialExpiredScreen();
+          // }
+          if (!kDisableTrialBlockingForAppleReview &&
+              (trialFlag || subExpired || profileExpired)) {
             return const TrialExpiredScreen();
           }
           return const HomeScreen();

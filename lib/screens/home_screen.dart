@@ -17,6 +17,10 @@ import 'services/services_screen.dart';
 import 'finances/finances_screen.dart';
 import 'profile/profile_screen.dart';
 
+// APPLE REVIEW FLAG:
+// Set to false to restore trial/subscription welcome UI.
+final bool kDisableTrialUiForAppleReview = true;
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -44,7 +48,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       await ref.read(authNotifierProvider.notifier).initializeNotifications();
     } catch (_) {}
     if (!mounted) return;
-    await _maybeShowTrialWelcome();
+    // Original behavior (restore after Apple review):
+    // await _maybeShowTrialWelcome();
+    if (!kDisableTrialUiForAppleReview) {
+      await _maybeShowTrialWelcome();
+    }
   }
 
   Future<void> _maybeShowTrialWelcome() async {

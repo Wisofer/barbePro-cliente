@@ -183,7 +183,9 @@ class _TrialWelcomeModalState extends State<TrialWelcomeModal>
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  '¡Tu prueba gratuita ya está activa! 🎉',
+                                                  // Original text:
+                                                  // '¡Tu prueba gratuita ya está activa! 🎉'
+                                                  '¡Tu cuenta está activa! 🎉',
                                                   style: GoogleFonts.inter(
                                                     fontSize: 18,
                                                     fontWeight: FontWeight.w800,
@@ -194,8 +196,11 @@ class _TrialWelcomeModalState extends State<TrialWelcomeModal>
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   dateStr.isEmpty
-                                                      ? 'Tu mes gratis con BarbeNic'
-                                                      : 'Tu mes gratis hasta el $dateStr',
+                                                      // Original text:
+                                                      // ? 'Tu mes gratis con BarbeNic'
+                                                      // : 'Tu mes gratis hasta el $dateStr',
+                                                      ? 'Bienvenido a BarbeNic'
+                                                      : 'Cuenta activa hasta el $dateStr',
                                                   style: GoogleFonts.inter(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w600,
@@ -214,7 +219,10 @@ class _TrialWelcomeModalState extends State<TrialWelcomeModal>
                                   child: Column(
                                     children: [
                                       Text(
-                                        'Disfruta de todas las funciones de BarbeNic durante tu mes gratis. Si más adelante quieres activar Pro, el equipo te puede ayudar.',
+                                        // Original text:
+                                        // 'Disfruta de todas las funciones de BarbeNic durante tu mes gratis. Si más adelante quieres activar Pro, el equipo te puede ayudar.',
+                                        'Disfruta de todas las funciones disponibles de BarbeNic. '
+                                        'Si necesitas apoyo, nuestro equipo está para ayudarte.',
                                         style: GoogleFonts.inter(
                                           fontSize: 14,
                                           height: 1.45,
