@@ -3,6 +3,19 @@ import '../providers/auth_provider.dart';
 import 'jwt_decoder.dart';
 
 class RoleHelper {
+  /// Barber o Employee autenticado (no demo): puede solicitar eliminación de cuenta.
+  static bool canRequestAccountDeletion(AuthState authState) {
+    if (!authState.isAuthenticated || authState.isDemoMode) return false;
+    var role = authState.userProfile?.role;
+    if (role == null || role.isEmpty) {
+      final token = authState.userToken;
+      if (token != null) {
+        role = JwtDecoder.getUserRole(token);
+      }
+    }
+    return role == 'Barber' || role == 'Employee';
+  }
+
   /// Verifica si el usuario actual es un Barber (dueño)
   static bool isBarber(WidgetRef ref) {
     final authState = ref.read(authNotifierProvider);

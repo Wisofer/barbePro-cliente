@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import '../../models/help_support.dart';
 import '../../services/api/help_support_service.dart';
+import 'widgets/ios_grouped_row.dart';
+import 'widgets/profile_ios_section.dart';
 
 class HelpSupportScreen extends ConsumerStatefulWidget {
   const HelpSupportScreen({super.key});
@@ -34,7 +36,7 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
     try {
       final service = ref.read(helpSupportServiceProvider);
       final helpSupport = await service.getHelpSupport();
-      
+
       if (mounted) {
         setState(() {
           _helpSupport = helpSupport;
@@ -44,13 +46,13 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       String message = 'Error al cargar la ayuda';
-      
+
       if (statusCode == 404) {
         message = 'Endpoint no encontrado. Verifica la configuración del servidor.';
       } else if (e.response?.data is Map) {
         message = e.response?.data['message'] ?? message;
       }
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -79,192 +81,143 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final mutedColor = isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
-          'Ayuda y Soporte',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          'Ayuda y soporte',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: accentColor))
           : _helpSupport == null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Iconsax.info_circle, color: mutedColor, size: 64),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No se pudo cargar la ayuda',
-                          style: GoogleFonts.inter(
-                            color: textColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (_errorMessage != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            _errorMessage!,
-                            style: GoogleFonts.inter(
-                              color: mutedColor,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: _loadHelpSupport,
-                          icon: const Icon(Iconsax.refresh),
-                          label: const Text('Reintentar'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accentColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              ? _ErrorBody(
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                  errorMessage: _errorMessage,
+                  accentColor: accentColor,
+                  onRetry: _loadHelpSupport,
                 )
               : RefreshIndicator(
                   onRefresh: _loadHelpSupport,
                   color: accentColor,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.only(bottom: 28),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Contactar soporte
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                accentColor.withAlpha(20),
-                                accentColor.withAlpha(10),
-                              ],
+                        ProfileIosSection(
+                          isFirst: true,
+                          title: 'Contacto',
+                          headerColor: sectionHeaderColor,
+                          cardColor: cardColor,
+                          borderColor: borderColor,
+                          tiles: [
+                            IosGroupedRow(
+                              icon: Iconsax.sms,
+                              title: 'Email',
+                              subtitle: _helpSupport!.contact.email,
+                              trailing: Icon(
+                                Iconsax.arrow_right_3,
+                                color: mutedColor.withValues(alpha: 0.5),
+                                size: 16,
+                              ),
+                              onTap: () => _launchUrl(
+                                'mailto:${_helpSupport!.contact.email}?subject=Soporte BarbeNic',
+                              ),
+                              accentColor: accentColor,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
                             ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: accentColor.withAlpha(30)),
+                            IosGroupedRow(
+                              icon: Iconsax.global,
+                              title: 'Sitio web',
+                              subtitle: _helpSupport!.contact.website,
+                              trailing: Icon(
+                                Iconsax.arrow_right_3,
+                                color: mutedColor.withValues(alpha: 0.5),
+                                size: 16,
+                              ),
+                              onTap: () => _launchUrl(_helpSupport!.contact.website),
+                              accentColor: accentColor,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                            ),
+                            ..._helpSupport!.contact.phones.map(
+                              (phone) => IosGroupedRow(
+                                icon: Iconsax.call,
+                                title: 'Teléfono',
+                                subtitle: phone,
+                                trailing: Icon(
+                                  Iconsax.arrow_right_3,
+                                  color: mutedColor.withValues(alpha: 0.5),
+                                  size: 16,
+                                ),
+                                onTap: () => _launchUrl('tel:$phone'),
+                                accentColor: accentColor,
+                                textColor: textColor,
+                                mutedColor: mutedColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 20,
+                            right: 16,
+                            bottom: 6,
+                            top: 22,
                           ),
+                          child: Text(
+                            'PREGUNTAS FRECUENTES',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                              color: sectionHeaderColor,
+                            ),
+                          ),
+                        ),
+                        IosGroupedCard(
+                          cardColor: cardColor,
                           child: Column(
                             children: [
-                              Icon(Iconsax.headphone, color: accentColor, size: 40),
-                              const SizedBox(height: 12),
-                              Text(
-                                '¿Necesitas ayuda?',
-                                style: GoogleFonts.inter(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
+                              for (int i = 0; i < _helpSupport!.faqs.length; i++) ...[
+                                _FaqTile(
+                                  faq: _helpSupport!.faqs[i],
+                                  textColor: textColor,
+                                  mutedColor: mutedColor,
+                                  borderColor: borderColor,
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Contáctanos y te responderemos lo antes posible',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: mutedColor,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => _launchUrl('mailto:${_helpSupport!.contact.email}?subject=Soporte BarbeNic'),
-                                      icon: const Icon(Iconsax.sms, size: 18),
-                                      label: const Text('Email'),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        side: BorderSide(color: accentColor),
-                                        foregroundColor: accentColor,
-                                      ),
-                                    ),
+                                if (i < _helpSupport!.faqs.length - 1)
+                                  Divider(
+                                    height: 1,
+                                    thickness: 0.5,
+                                    indent: 16,
+                                    endIndent: 16,
+                                    color: borderColor.withValues(alpha: 0.75),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed: () => _launchUrl(_helpSupport!.contact.website),
-                                      icon: const Icon(Iconsax.global, size: 18),
-                                      label: const Text('Sitio Web'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: accentColor,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (_helpSupport!.contact.phones.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                ..._helpSupport!.contact.phones.map((phone) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 4),
-                                      child: InkWell(
-                                        onTap: () => _launchUrl('tel:$phone'),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Iconsax.call, size: 16, color: accentColor),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              phone,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 13,
-                                                color: accentColor,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    )),
                               ],
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
-
-                        // Preguntas frecuentes
-                        Text(
-                          'Preguntas Frecuentes',
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ..._helpSupport!.faqs.map((faq) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _FaqCard(
-                                faq: faq,
-                                textColor: textColor,
-                                mutedColor: mutedColor,
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                                accentColor: accentColor,
-                              ),
-                            )),
                       ],
                     ),
                   ),
@@ -273,82 +226,134 @@ class _HelpSupportScreenState extends ConsumerState<HelpSupportScreen> {
   }
 }
 
-class _FaqCard extends StatefulWidget {
-  final FaqDto faq;
+class _ErrorBody extends StatelessWidget {
   final Color textColor;
   final Color mutedColor;
-  final Color cardColor;
-  final Color borderColor;
+  final String? errorMessage;
   final Color accentColor;
+  final VoidCallback onRetry;
 
-  const _FaqCard({
-    required this.faq,
+  const _ErrorBody({
     required this.textColor,
     required this.mutedColor,
-    required this.cardColor,
-    required this.borderColor,
+    required this.errorMessage,
     required this.accentColor,
+    required this.onRetry,
   });
 
   @override
-  State<_FaqCard> createState() => _FaqCardState();
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Iconsax.info_circle, color: mutedColor, size: 56),
+            const SizedBox(height: 16),
+            Text(
+              'No se pudo cargar la ayuda',
+              style: GoogleFonts.inter(
+                color: textColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                errorMessage!,
+                style: GoogleFonts.inter(
+                  color: mutedColor,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Iconsax.refresh),
+              label: const Text('Reintentar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _FaqCardState extends State<_FaqCard> {
-  bool _isExpanded = false;
+class _FaqTile extends StatefulWidget {
+  final FaqDto faq;
+  final Color textColor;
+  final Color mutedColor;
+  final Color borderColor;
+
+  const _FaqTile({
+    required this.faq,
+    required this.textColor,
+    required this.mutedColor,
+    required this.borderColor,
+  });
+
+  @override
+  State<_FaqTile> createState() => _FaqTileState();
+}
+
+class _FaqTileState extends State<_FaqTile> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: widget.cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: widget.borderColor),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
                       widget.faq.question,
                       style: GoogleFonts.inter(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: widget.textColor,
+                        height: 1.3,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Icon(
-                    _isExpanded ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1,
+                    _expanded ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1,
                     color: widget.mutedColor,
-                    size: 20,
+                    size: 18,
                   ),
                 ],
               ),
-            ),
-          ),
-          if (_isExpanded)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(
-                widget.faq.answer,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: widget.mutedColor,
-                  height: 1.5,
+              if (_expanded) ...[
+                const SizedBox(height: 10),
+                Text(
+                  widget.faq.answer,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: widget.mutedColor,
+                    height: 1.5,
+                  ),
                 ),
-              ),
-            ),
-        ],
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
 }
-

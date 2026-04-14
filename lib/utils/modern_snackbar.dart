@@ -3,150 +3,117 @@ import 'package:iconsax/iconsax.dart';
 import '../main_theme.dart';
 import 'snackbar_helper.dart';
 
-/// Utilidades para mostrar SnackBars modernos con iconos y animaciones
-/// Usando la paleta de colores personalizada de BarbeNic
+/// SnackBars modernos: tarjeta oscura con acento lateral y cierre manual.
 class ModernSnackBar {
-  
-  /// Mostrar SnackBar completamente personalizado con colores del tema
   static void showCustom(
     BuildContext context, {
     required String title,
     required String message,
-    required Color backgroundColor,
-    required Color iconColor,
+    required Color accentColor,
     required IconData icon,
   }) {
-    // 🔒 SEGURIDAD: Capturar el ScaffoldMessengerState cuando se crea el SnackBar
-    // Esto evita el error "Looking up a deactivated widget's ancestor is unsafe"
-    ScaffoldMessengerState? scaffoldMessenger;
-    
+    ScaffoldMessengerState? messenger;
     try {
       if (context.mounted) {
-        scaffoldMessenger = ScaffoldMessenger.of(context);
+        messenger = ScaffoldMessenger.of(context);
       }
-    } catch (e) {
-      // Si falla, usar el GlobalKey como fallback
-      scaffoldMessenger = SnackbarHelper.scaffoldMessengerKey.currentState;
+    } catch (_) {
+      messenger = SnackbarHelper.scaffoldMessengerKey.currentState;
     }
-    
-    // Si no hay scaffoldMessenger disponible, no mostrar el SnackBar
-    if (scaffoldMessenger == null) {
-      debugPrint('⚠️ [SNACKBAR] No se pudo mostrar snackbar: $title - $message');
-      return;
-    }
-    
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        content: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: backgroundColor.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Icono con fondo circular
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.2),
-                  shape: BoxShape.circle,
+
+    messenger ??= SnackbarHelper.scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          duration: const Duration(seconds: 4),
+          content: Container(
+            padding: const EdgeInsets.fromLTRB(0, 12, 8, 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF111827),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Contenido del mensaje
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: SystemMovilTextStyles.titleMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      message,
-                      style: SystemMovilTextStyles.bodyMedium.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Botón de cerrar - 🔒 SEGURIDAD: Usar GlobalKey directamente para evitar errores
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    // 🔒 SEGURIDAD: Usar GlobalKey directamente para evitar "deactivated widget" error
-                    // Esto es más seguro porque no depende del context que puede estar desactivado
-                    try {
-                      final messenger = SnackbarHelper.scaffoldMessengerKey.currentState;
-                      if (messenger != null) {
-                        messenger.hideCurrentSnackBar();
-                      } else {
-                        // Fallback: intentar con el scaffoldMessenger capturado si el GlobalKey falla
-                        if (scaffoldMessenger != null) {
-                          try {
-                            scaffoldMessenger.hideCurrentSnackBar();
-                          } catch (_) {
-                            // Si todo falla, ignorar silenciosamente (el SnackBar se cerrará automáticamente)
-                          }
-                        }
-                      }
-                    } catch (e) {
-                      // Si todo falla, ignorar silenciosamente
-                      // El SnackBar se cerrará automáticamente después de su duración
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  splashColor: Colors.white.withOpacity(0.1),
-                  highlightColor: Colors.white.withOpacity(0.05),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Iconsax.close_circle,
-                      color: Colors.white,
-                      size: 18,
-                    ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 56,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-              ),
-            ],
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 18, color: accentColor),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: SystemMovilTextStyles.titleMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        message,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: SystemMovilTextStyles.bodyMedium.copyWith(
+                          color: const Color(0xFFD1D5DB),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Cerrar',
+                  onPressed: () {
+                    final m =
+                        SnackbarHelper.scaffoldMessengerKey.currentState ??
+                        messenger;
+                    m?.hideCurrentSnackBar();
+                  },
+                  icon: const Icon(Icons.close_rounded),
+                  color: const Color(0xFFE5E7EB),
+                  iconSize: 18,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
   }
-  
-  /// Mostrar SnackBar de éxito con colores personalizados
+
   static void showSuccess(
     BuildContext context, {
     required String title,
@@ -156,13 +123,11 @@ class ModernSnackBar {
       context,
       title: title,
       message: message,
-      backgroundColor: SystemMovilColors.success,
-      iconColor: Colors.white,
+      accentColor: const Color(0xFF10B981),
       icon: Iconsax.tick_circle,
     );
   }
 
-  /// Mostrar SnackBar de error con colores personalizados
   static void showError(
     BuildContext context, {
     required String title,
@@ -172,13 +137,11 @@ class ModernSnackBar {
       context,
       title: title,
       message: message,
-      backgroundColor: SystemMovilColors.error,
-      iconColor: Colors.white,
+      accentColor: const Color(0xFFEF4444),
       icon: Iconsax.close_circle,
     );
   }
 
-  /// Mostrar SnackBar de advertencia con colores personalizados
   static void showWarning(
     BuildContext context, {
     required String title,
@@ -188,13 +151,11 @@ class ModernSnackBar {
       context,
       title: title,
       message: message,
-      backgroundColor: SystemMovilColors.warning,
-      iconColor: Colors.white,
+      accentColor: const Color(0xFFF59E0B),
       icon: Iconsax.warning_2,
     );
   }
 
-  /// Mostrar SnackBar de información con colores personalizados
   static void showInfo(
     BuildContext context, {
     required String title,
@@ -204,13 +165,11 @@ class ModernSnackBar {
       context,
       title: title,
       message: message,
-      backgroundColor: SystemMovilColors.info,
-      iconColor: Colors.white,
+      accentColor: const Color(0xFF3B82F6),
       icon: Iconsax.info_circle,
     );
   }
 
-  /// Mostrar SnackBar de ayuda con colores personalizados
   static void showHelp(
     BuildContext context, {
     required String title,
@@ -220,8 +179,7 @@ class ModernSnackBar {
       context,
       title: title,
       message: message,
-      backgroundColor: SystemMovilColors.primary,
-      iconColor: Colors.white,
+      accentColor: SystemMovilColors.primary,
       icon: Iconsax.message_question,
     );
   }

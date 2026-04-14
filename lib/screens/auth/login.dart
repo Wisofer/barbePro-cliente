@@ -6,10 +6,12 @@ import 'package:iconsax/iconsax.dart';
 import 'package:simple_icons/simple_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../main_theme.dart';
+import '../../widgets/responsive_centered_body.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/auth/social_auth_service.dart';
 import '../../services/storage/credentials_storage.dart';
 import '../../utils/audio_helper.dart';
+import 'privacy_security_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -235,7 +237,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     final fieldSpacing = isSmallScreen ? 12.0 : 16.0;
     final buttonHeight = isSmallScreen ? 48.0 : 52.0;
     const accentLight = Color(0xFF34D399);
-    const bgColor = Color(0xFFF0FDF4);
+    const bgColor = Colors.white;
     const cardColor = Colors.white;
     const textColor = Color(0xFF1F2937);
     const mutedColor = Color(0xFF6B7280);
@@ -322,6 +324,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
             // Contenido principal
             SafeArea(
+              child: ResponsiveCenteredBody(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: ConstrainedBox(
@@ -614,6 +617,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 6),
+                              Center(
+                                child: GestureDetector(
+                                  onTap: _isLoading
+                                      ? null
+                                      : () => Navigator.of(context).pushNamed(PrivacySecurityScreen.routeName),
+                                  child: Text(
+                                    'Privacidad y seguridad',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: mutedColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               Center(
                                 child: GestureDetector(
@@ -674,6 +693,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                     ],
                   ),
                 ),
+              ),
               ),
             ),
           ],

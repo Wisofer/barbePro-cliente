@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/service.dart';
 import '../../services/api/service_service.dart';
 import '../../utils/audio_helper.dart';
+import '../profile/profile_palette.dart';
+import '../profile/widgets/profile_ios_section.dart' show IosGroupedCard;
 
 class CreateEditServiceScreen extends ConsumerStatefulWidget {
   final ServiceDto? service;
@@ -125,18 +127,24 @@ class _CreateEditServiceScreenState extends ConsumerState<CreateEditServiceScree
 
   @override
   Widget build(BuildContext context) {
+    final p = ProfilePalette.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFD1D5DB);
-    const accentColor = Color(0xFF10B981);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
+    final textColor = p.textColor;
+    final mutedColor = p.mutedColor;
+    final cardColor = p.cardColor;
+    final borderColor = p.borderColor;
+    final accentColor = p.accent;
+    final isEditing = widget.service != null;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFF9FAFB),
+      backgroundColor: groupedBg,
       appBar: AppBar(
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
@@ -144,9 +152,9 @@ class _CreateEditServiceScreenState extends ConsumerState<CreateEditServiceScree
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.service == null ? 'Nuevo Servicio' : 'Editar Servicio',
+          isEditing ? 'Editar servicio' : 'Nuevo servicio',
           style: GoogleFonts.inter(
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: FontWeight.w600,
             color: textColor,
           ),
@@ -156,244 +164,267 @@ class _CreateEditServiceScreenState extends ConsumerState<CreateEditServiceScree
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.only(bottom: 28),
             children: [
-              // Nombre
-              Text(
-                'Nombre del servicio *',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _nameController,
-                style: GoogleFonts.inter(color: textColor),
-                decoration: InputDecoration(
-                  hintText: 'Ej: Corte de cabello',
-                  hintStyle: GoogleFonts.inter(color: mutedColor),
-                  filled: true,
-                  fillColor: cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: accentColor, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'El nombre es obligatorio';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Precio
-              Text(
-                'Precio *',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _priceController,
-                style: GoogleFonts.inter(color: textColor),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                decoration: InputDecoration(
-                  hintText: '0.00',
-                  hintStyle: GoogleFonts.inter(color: mutedColor),
-                  prefixText: r'C$ ',
-                  prefixStyle: GoogleFonts.inter(
-                    color: textColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  filled: true,
-                  fillColor: cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: accentColor, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'El precio es obligatorio';
-                  }
-                  final price = double.tryParse(value);
-                  if (price == null || price <= 0) {
-                    return 'Ingresa un precio válido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Duración
-              Text(
-                'Duración (minutos)',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _durationController,
-                style: GoogleFonts.inter(color: textColor),
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: InputDecoration(
-                  hintText: '30 (por defecto)',
-                  hintStyle: GoogleFonts.inter(color: mutedColor),
-                  suffixText: 'min',
-                  suffixStyle: GoogleFonts.inter(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Text(
+                  'Los clientes verán nombre, precio y duración al reservar.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
                     color: mutedColor,
-                    fontSize: 13,
+                    height: 1.4,
                   ),
-                  filled: true,
-                  fillColor: cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: accentColor, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    final duration = int.tryParse(value);
-                    if (duration == null || duration <= 0) {
-                      return 'Ingresa una duración válida';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Opcional. Si no se especifica, se usará 30 minutos por defecto.',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: mutedColor,
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // Estado activo (solo para edición)
-              if (widget.service != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+                child: Text(
+                  'DATOS',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                    color: sectionHeaderColor,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Iconsax.toggle_on, color: _isActive ? accentColor : mutedColor, size: 24),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Servicio activo',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: textColor,
+                ),
+              ),
+              IosGroupedCard(
+                cardColor: cardColor,
+                child: Column(
+                  children: [
+                    _ServiceGroupedField(
+                      controller: _nameController,
+                      label: 'Nombre',
+                      hint: 'Ej. Corte de cabello',
+                      leadingIcon: Iconsax.scissor,
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      accentColor: accentColor,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'El nombre es obligatorio';
+                        }
+                        return null;
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 16,
+                      endIndent: 16,
+                      color: borderColor.withValues(alpha: 0.75),
+                    ),
+                    _ServiceGroupedField(
+                      controller: _priceController,
+                      label: 'Precio (C\$)',
+                      hint: '0.00',
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      accentColor: accentColor,
+                      leadingIcon: Iconsax.wallet_3,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'El precio es obligatorio';
+                        }
+                        final price = double.tryParse(value);
+                        if (price == null || price <= 0) {
+                          return 'Precio no válido';
+                        }
+                        return null;
+                      },
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 16,
+                      endIndent: 16,
+                      color: borderColor.withValues(alpha: 0.75),
+                    ),
+                    _ServiceGroupedField(
+                      controller: _durationController,
+                      label: 'Duración (min)',
+                      hint: '30',
+                      leadingIcon: Iconsax.clock,
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      accentColor: accentColor,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      suffixText: 'min',
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          final duration = int.tryParse(value);
+                          if (duration == null || duration <= 0) {
+                            return 'Duración no válida';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: Text(
+                  'Si dejas la duración vacía, se usarán 30 minutos.',
+                  style: GoogleFonts.inter(fontSize: 12, color: mutedColor),
+                ),
+              ),
+              if (isEditing) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 22),
+                  child: Text(
+                    'VISIBILIDAD',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: sectionHeaderColor,
+                    ),
+                  ),
+                ),
+                IosGroupedCard(
+                  cardColor: cardColor,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Servicio activo',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
                               ),
-                            ),
-                            Text(
-                              _isActive ? 'Los clientes pueden ver este servicio' : 'Este servicio está oculto',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: mutedColor,
+                              const SizedBox(height: 4),
+                              Text(
+                                _isActive
+                                    ? 'Visible en reservas.'
+                                    : 'Oculto para los clientes.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: mutedColor,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      Switch(
-                        value: _isActive,
-                        onChanged: (value) {
-                          setState(() => _isActive = value);
-                        },
-                        activeColor: accentColor,
-                      ),
-                    ],
+                        Switch.adaptive(
+                          value: _isActive,
+                          activeThumbColor: accentColor,
+                          activeTrackColor: accentColor.withValues(alpha: 0.45),
+                          onChanged: (value) {
+                            setState(() => _isActive = value);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
               ],
-
-              // Botón guardar
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveService,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveService,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          isEditing ? 'Guardar' : 'Crear servicio',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        widget.service == null ? 'Crear Servicio' : 'Guardar Cambios',
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ServiceGroupedField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData leadingIcon;
+  final Color textColor;
+  final Color mutedColor;
+  final Color accentColor;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? suffixText;
+  final String? Function(String?)? validator;
+
+  const _ServiceGroupedField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.leadingIcon,
+    required this.textColor,
+    required this.mutedColor,
+    required this.accentColor,
+    this.keyboardType,
+    this.inputFormatters,
+    this.suffixText,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        style: GoogleFonts.inter(fontSize: 16, color: textColor),
+        decoration: InputDecoration(
+          isDense: true,
+          labelText: label,
+          labelStyle: GoogleFonts.inter(color: mutedColor, fontSize: 13),
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(color: mutedColor.withValues(alpha: 0.7)),
+          prefixIcon: Icon(leadingIcon, color: accentColor, size: 20),
+          suffixText: suffixText,
+          suffixStyle: GoogleFonts.inter(color: mutedColor, fontSize: 13),
+          border: InputBorder.none,
+          errorStyle: GoogleFonts.inter(
+            color: const Color(0xFFEF4444),
+            fontSize: 12,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        validator: validator,
       ),
     );
   }

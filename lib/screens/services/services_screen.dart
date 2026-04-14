@@ -7,6 +7,7 @@ import '../../models/service.dart';
 import '../../services/api/service_service.dart';
 import '../../services/api/employee_service_service.dart';
 import '../../utils/role_helper.dart';
+import '../profile/profile_palette.dart';
 import 'create_edit_service_screen.dart';
 
 class ServicesScreen extends ConsumerStatefulWidget {
@@ -84,7 +85,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           _errorMessage = statusCode != null ? 'Error $statusCode: $message' : message;
         });
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -97,25 +98,29 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   Future<void> _deleteService(ServiceDto service) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         title: Text(
-          'Eliminar servicio',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          '¿Eliminar servicio?',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 18),
         ),
         content: Text(
-          '¿Estás seguro de que deseas eliminar "${service.name}"? Esta acción no se puede deshacer.',
-          style: GoogleFonts.inter(),
+          'Se eliminará "${service.name}". No podrás deshacerlo.',
+          style: GoogleFonts.inter(fontSize: 14, height: 1.35),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancelar', style: GoogleFonts.inter()),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancelar', style: GoogleFonts.inter(color: const Color(0xFF6B7280))),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               'Eliminar',
-              style: GoogleFonts.inter(color: const Color(0xFFEF4444)),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFEF4444),
+              ),
             ),
           ),
         ],
@@ -130,7 +135,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Servicio eliminado exitosamente'),
+            content: Text('Servicio eliminado'),
             backgroundColor: Color(0xFF10B981),
           ),
         );
@@ -150,85 +155,61 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFD1D5DB);
-    const accentColor = Color(0xFF10B981);
+    final p = ProfilePalette.of(context);
+    final groupedBg = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF000000)
+        : Colors.white;
+    final textColor = p.textColor;
+    final mutedColor = p.mutedColor;
+    final cardColor = p.cardColor;
+    final borderColor = p.borderColor;
+    final accentColor = p.accent;
+    final isBarber = RoleHelper.isBarber(ref);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFF9FAFB),
+      backgroundColor: groupedBg,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header compacto
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 8, 8, 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Servicios',
-                        style: GoogleFonts.inter(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_services.length} ${_services.length == 1 ? 'servicio' : 'servicios'}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: mutedColor,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // Solo mostrar botón de crear para barberos
-                  if (RoleHelper.isBarber(ref))
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CreateEditServiceScreen(),
-                            ),
-                          );
-                          if (result == true) {
-                            _loadServices();
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: accentColor.withAlpha(15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            Iconsax.add,
-                            color: accentColor,
-                            size: 18,
-                          ),
-                        ),
-                      ),
+                  Text(
+                    'Servicios',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                      letterSpacing: -0.35,
                     ),
+                  ),
+                  if (isBarber) ...[
+                    const Spacer(),
+                    IconButton(
+                      style: IconButton.styleFrom(
+                        backgroundColor: accentColor.withValues(alpha: 0.12),
+                        foregroundColor: accentColor,
+                      ),
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CreateEditServiceScreen(),
+                          ),
+                        );
+                        if (result == true && mounted) {
+                          _loadServices();
+                        }
+                      },
+                      icon: const Icon(Iconsax.add, size: 22),
+                    ),
+                  ],
                 ],
               ),
             ),
-
-            // Lista de servicios
             Expanded(
               child: _isLoading
                   ? Center(child: CircularProgressIndicator(color: accentColor))
@@ -242,15 +223,16 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                         )
                       : _services.isEmpty
                           ? _EmptyState(
-                              onAddService: RoleHelper.isBarber(ref)
+                              onAddService: isBarber
                                   ? () async {
                                       final result = await Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => const CreateEditServiceScreen(),
+                                          builder: (context) =>
+                                              const CreateEditServiceScreen(),
                                         ),
                                       );
-                                      if (result == true) {
+                                      if (result == true && mounted) {
                                         _loadServices();
                                       }
                                     }
@@ -263,38 +245,38 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                               onRefresh: _loadServices,
                               color: accentColor,
                               child: ListView.builder(
-                                padding: const EdgeInsets.all(16),
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
                                 itemCount: _services.length,
                                 itemBuilder: (context, index) {
                                   final service = _services[index];
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: _ServiceCard(
-                                      service: service,
-                                      textColor: textColor,
-                                      mutedColor: mutedColor,
-                                      cardColor: cardColor,
-                                      borderColor: borderColor,
-                                      accentColor: accentColor,
-                                      onEdit: RoleHelper.isBarber(ref)
-                                          ? () async {
-                                              final result = await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => CreateEditServiceScreen(
-                                                    service: service,
-                                                  ),
+                                  return _ServiceSimpleRow(
+                                    service: service,
+                                    textColor: textColor,
+                                    mutedColor: mutedColor,
+                                    cardColor: cardColor,
+                                    borderColor: borderColor,
+                                    accentColor: accentColor,
+                                    destructive: ProfilePalette.destructive,
+                                    onEdit: isBarber
+                                        ? () async {
+                                            final result = await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    CreateEditServiceScreen(
+                                                  service: service,
                                                 ),
-                                              );
-                                              if (result == true) {
-                                                _loadServices();
-                                              }
+                                              ),
+                                            );
+                                            if (result == true && mounted) {
+                                              _loadServices();
                                             }
-                                          : null,
-                                      onDelete: RoleHelper.isBarber(ref)
-                                          ? () => _deleteService(service)
-                                          : null,
-                                    ),
+                                          }
+                                        : null,
+                                    onDelete: isBarber
+                                        ? () => _deleteService(service)
+                                        : null,
                                   );
                                 },
                               ),
@@ -333,7 +315,7 @@ class _EmptyState extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: mutedColor.withAlpha(10),
+                  color: mutedColor.withValues(alpha: 0.06),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -455,212 +437,135 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-class _ServiceCard extends StatelessWidget {
+/// Fila simple: toque en el contenido → editar; icono papelera → modal eliminar.
+class _ServiceSimpleRow extends StatelessWidget {
   final ServiceDto service;
   final Color textColor;
   final Color mutedColor;
   final Color cardColor;
   final Color borderColor;
   final Color accentColor;
+  final Color destructive;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
-  const _ServiceCard({
+  const _ServiceSimpleRow({
     required this.service,
     required this.textColor,
     required this.mutedColor,
     required this.cardColor,
     required this.borderColor,
     required this.accentColor,
+    required this.destructive,
     this.onEdit,
     this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    final durationLine = service.isActive
+        ? service.formattedDuration
+        : '${service.formattedDuration} · inactivo';
+
+    final main = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 12, 18),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  service.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  durationLine,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: service.isActive
+                        ? mutedColor
+                        : destructive.withValues(alpha: 0.9),
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            service.formattedPrice,
+            style: GoogleFonts.inter(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: accentColor,
+            ),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        accentColor,
-                        accentColor.withOpacity(0.7),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Iconsax.scissor,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Padding(
-                    // Reservar espacio para los botones (80px = 32px botón + 6px espacio + 32px botón + 10px margen)
-                    padding: const EdgeInsets.only(right: 80),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          service.name,
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Icon(Iconsax.clock, size: 12, color: mutedColor),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                service.formattedDuration,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: mutedColor,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: borderColor.withValues(alpha: 0.45),
           ),
-          // Botones horizontales arriba y precio abajo
-          Positioned(
-            top: 16,
-            right: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Botones horizontales (solo para barberos)
-                if (onEdit != null || onDelete != null)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Botón editar
-                      if (onEdit != null)
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: onEdit,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: accentColor.withAlpha(15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: accentColor.withAlpha(30),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Icon(
-                                Iconsax.edit_2,
-                                size: 16,
-                                color: accentColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (onEdit != null && onDelete != null) const SizedBox(width: 6),
-                      // Botón eliminar
-                      if (onDelete != null)
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: onDelete,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444).withAlpha(15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFEF4444).withAlpha(30),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Icon(
-                                Iconsax.trash,
-                            size: 16,
-                            color: const Color(0xFFEF4444),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Precio abajo
-                Text(
-                  service.formattedPrice,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: accentColor,
-                  ),
-                ),
-                if (!service.isActive)
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444).withAlpha(25),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Inactivo',
-                      style: GoogleFonts.inter(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFFEF4444),
-                      ),
-                    ),
-                  ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: onEdit != null
+                    ? Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: onEdit,
+                          child: main,
+                        ),
+                      )
+                    : main,
+              ),
+              if (onDelete != null)
+                IconButton(
+                  onPressed: onDelete,
+                  icon: Icon(
+                    Iconsax.trash,
+                    size: 22,
+                    color: destructive.withValues(alpha: 0.85),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  style: IconButton.styleFrom(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

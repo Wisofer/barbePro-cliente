@@ -234,6 +234,43 @@ class BarberService {
       data: requestData,
     );
   }
+
+  /// Sube la foto de perfil del negocio (base64).
+  Future<BarberDto> uploadProfilePhoto(String imageBase64) async {
+    final response = await _dio.post(
+      '/barber/profile-photo',
+      data: {'imageBase64': imageBase64},
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic> && data['profile'] != null) {
+      return BarberDto.fromJson(data['profile'] as Map<String, dynamic>);
+    }
+    return BarberDto.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<List<SocialLinkDto>> getSocialLinks() async {
+    try {
+      final response = await _dio.get('/barber/social-links');
+      if (response.data is! List) {
+        return [];
+      }
+      return (response.data as List)
+          .map((json) => SocialLinkDto.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on DioException {
+      rethrow;
+    }
+  }
+
+  Future<List<SocialLinkDto>> updateSocialLinks(List<Map<String, dynamic>> links) async {
+    final response = await _dio.put('/barber/social-links', data: links);
+    if (response.data is! List) {
+      return [];
+    }
+    return (response.data as List)
+        .map((json) => SocialLinkDto.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 final barberServiceProvider = Provider<dynamic>((ref) {

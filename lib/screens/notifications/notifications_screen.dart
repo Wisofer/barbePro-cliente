@@ -92,7 +92,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final notificationsState = ref.watch(notificationsProvider);
 
-    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB);
+    final bgColor = isDark ? const Color(0xFF0A0A0B) : Colors.white;
     final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);

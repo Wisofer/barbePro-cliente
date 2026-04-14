@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'widgets/ios_grouped_row.dart';
+import 'widgets/profile_ios_section.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -18,333 +20,239 @@ class AboutScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final mutedColor = isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
           'Acerca de',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.only(bottom: 32),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Información de la aplicación
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            ProfileIosSection(
+              isFirst: true,
+              title: 'App',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: accentColor.withAlpha(20),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Iconsax.scissor,
-                          color: accentColor,
-                          size: 24,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Iconsax.scissor, color: accentColor, size: 22),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'BarbeNic',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                    letterSpacing: -0.4,
+                                  ),
+                                ),
+                                Text(
+                                  'Gestión profesional',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: mutedColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'BarbeNic',
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: textColor,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Sistema de Gestión Profesional',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: mutedColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 14),
+                      Divider(height: 1, color: borderColor.withValues(alpha: 0.6)),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Sistema de gestión para barberías: citas, servicios, finanzas y clientes.',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: mutedColor,
+                          height: 1.5,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    height: 1,
-                    color: borderColor,
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Sistema de gestión profesional para barberías. Gestiona citas, servicios, finanzas y clientes de manera eficiente y profesional.',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: mutedColor,
-                      height: 1.6,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-
-            // Información de COWIB
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            ProfileIosSection(
+              title: 'COWIB',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: accentColor.withAlpha(20),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Iconsax.code,
-                          color: accentColor,
-                          size: 24,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Iconsax.code, color: accentColor, size: 22),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'COWIB',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                Text(
+                                  'Desarrollo de software',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: mutedColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Divider(height: 1, color: borderColor.withValues(alpha: 0.6)),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Software a medida y soluciones personalizadas para tu negocio.',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: mutedColor,
+                          height: 1.5,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'COWIB',
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: textColor,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Desarrollo de Software',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: mutedColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 12),
+                      _ServiceItem(
+                        icon: Iconsax.box,
+                        text: 'Sistemas de inventario personalizados',
+                        textColor: textColor,
+                        accentColor: accentColor,
                       ),
+                      const SizedBox(height: 8),
+                      _ServiceItem(
+                        icon: Iconsax.setting_2,
+                        text: 'Soluciones tecnológicas a medida',
+                        textColor: textColor,
+                        accentColor: accentColor,
+                      ),
+                      const SizedBox(height: 8),
+                      _ServiceItem(
+                        icon: Iconsax.lamp,
+                        text: 'Soporte tecnológico',
+                        textColor: textColor,
+                        accentColor: accentColor,
+                      ),
+                      const SizedBox(height: 8),
+                      _ServiceItem(
+                        icon: Iconsax.star,
+                        text: 'Productos pensados para crecer contigo',
+                        textColor: textColor,
+                        accentColor: accentColor,
+                      ),
+                      const SizedBox(height: 8),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    height: 1,
-                    color: borderColor,
+                ),
+              ],
+            ),
+            ProfileIosSection(
+              title: 'Contacto',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                IosGroupedRow(
+                  icon: Iconsax.global,
+                  title: 'Sitio web',
+                  subtitle: 'www.cowib.es',
+                  trailing: Icon(
+                    Iconsax.arrow_right_3,
+                    color: mutedColor.withValues(alpha: 0.5),
+                    size: 16,
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Somos una empresa especializada en desarrollo de software a medida. Ofrecemos soluciones personalizadas para tu negocio.',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: mutedColor,
-                      height: 1.6,
-                    ),
+                  onTap: () => _launchUrl('https://www.cowib.es'),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+                IosGroupedRow(
+                  icon: Iconsax.sms,
+                  title: 'Email',
+                  subtitle: 'info@cowib.es',
+                  trailing: Icon(
+                    Iconsax.arrow_right_3,
+                    color: mutedColor.withValues(alpha: 0.5),
+                    size: 16,
                   ),
-                  const SizedBox(height: 16),
-                  _ServiceItem(
-                    icon: Iconsax.box,
-                    text: 'Sistemas de inventario personalizados',
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 12),
-                  _ServiceItem(
-                    icon: Iconsax.setting_2,
-                    text: 'Soluciones tecnológicas a medida',
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 12),
-                  _ServiceItem(
-                    icon: Iconsax.lamp,
-                    text: 'Resolvemos tus problemas tecnológicos',
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 12),
-                  _ServiceItem(
-                    icon: Iconsax.star,
-                    text: 'Creamos soluciones increíbles',
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                ],
+                  onTap: () => _launchUrl('mailto:info@cowib.es'),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                '© 2026 COWIB. Todos los derechos reservados.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: mutedColor,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Información de contacto
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Contacto',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _ContactItem(
-                    icon: Iconsax.global,
-                    label: 'Sitio Web',
-                    value: 'www.cowib.es',
-                    onTap: () => _launchUrl('https://www.cowib.es'),
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 16),
-                  _ContactItem(
-                    icon: Iconsax.sms,
-                    label: 'Email',
-                    value: 'info@cowib.es',
-                    onTap: () => _launchUrl('mailto:info@cowib.es'),
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Derechos de autor
-            Text(
-              '© 2026 COWIB. Todos los derechos reservados.',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: mutedColor,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ContactItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-  final Color textColor;
-  final Color mutedColor;
-  final Color accentColor;
-
-  const _ContactItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
-    required this.textColor,
-    required this.mutedColor,
-    required this.accentColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: accentColor.withAlpha(5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: accentColor.withAlpha(20)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: accentColor.withAlpha(20),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: accentColor, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: mutedColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Iconsax.arrow_right_3, color: mutedColor, size: 18),
           ],
         ),
       ),
@@ -356,30 +264,29 @@ class _ServiceItem extends StatelessWidget {
   final IconData icon;
   final String text;
   final Color textColor;
-  final Color mutedColor;
   final Color accentColor;
 
   const _ServiceItem({
     required this.icon,
     required this.text,
     required this.textColor,
-    required this.mutedColor,
     required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, color: accentColor, size: 18),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
             style: GoogleFonts.inter(
               fontSize: 14,
               color: textColor,
-              height: 1.5,
+              height: 1.45,
             ),
           ),
         ),
@@ -387,4 +294,3 @@ class _ServiceItem extends StatelessWidget {
     );
   }
 }
-

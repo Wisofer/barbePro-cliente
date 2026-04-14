@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../utils/money_formatter.dart';
 import '../../services/api/barber_service.dart';
+import 'widgets/profile_ios_section.dart' show IosGroupedCard;
 
 class QuickStatsScreen extends ConsumerStatefulWidget {
   const QuickStatsScreen({super.key});
@@ -86,24 +87,28 @@ class _QuickStatsScreenState extends ConsumerState<QuickStatsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
-          'Estadísticas Rápidas',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          'Estadísticas rápidas',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: accentColor))
           : _stats == null
@@ -152,117 +157,141 @@ class _QuickStatsScreenState extends ConsumerState<QuickStatsScreen> {
                   color: accentColor,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.only(bottom: 28),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Resumen del mes actual',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: mutedColor,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                          child: Text(
+                            'Resumen del mes en curso',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: mutedColor,
+                              height: 1.4,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+                          child: Text(
+                            'MES ACTUAL',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                              color: sectionHeaderColor,
+                            ),
+                          ),
+                        ),
 
                         // Estadísticas principales
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _StatCard(
-                                icon: Iconsax.calendar_2,
-                                label: 'Citas del Mes',
-                                value: _stats!['appointmentsThisMonth'].toString(),
-                                color: accentColor,
-                                textColor: textColor,
-                                mutedColor: mutedColor,
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Iconsax.wallet_money,
-                                label: 'Ingresos',
-                                value: MoneyFormatter.formatCordobas(_stats!['incomeThisMonth']),
-                                color: const Color(0xFF3B82F6),
-                                textColor: textColor,
-                                mutedColor: mutedColor,
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _StatCard(
-                                icon: Iconsax.profile_2user,
-                                label: 'Clientes Atendidos',
-                                value: _stats!['clientsServed'].toString(),
-                                color: const Color(0xFF8B5CF6),
-                                textColor: textColor,
-                                mutedColor: mutedColor,
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _StatCard(
-                                icon: Iconsax.chart,
-                                label: 'Promedio por Cliente',
-                                value: MoneyFormatter.formatCordobas(_stats!['averagePerClient']),
-                                color: const Color(0xFFF59E0B),
-                                textColor: textColor,
-                                mutedColor: mutedColor,
-                                cardColor: cardColor,
-                                borderColor: borderColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Detalles de citas
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
                             children: [
-                              Text(
-                                'Estado de Citas',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Iconsax.calendar_2,
+                                  label: 'Citas del Mes',
+                                  value: _stats!['appointmentsThisMonth'].toString(),
+                                  color: accentColor,
+                                  textColor: textColor,
+                                  mutedColor: mutedColor,
+                                  cardColor: cardColor,
                                 ),
                               ),
-                              const SizedBox(height: 16),
-                              _StatRow(
-                                icon: Iconsax.tick_circle,
-                                label: 'Completadas',
-                                value: _stats!['completedAppointments'].toString(),
-                                color: accentColor,
-                                textColor: textColor,
-                                mutedColor: mutedColor,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Iconsax.wallet_money,
+                                  label: 'Ingresos',
+                                  value: MoneyFormatter.formatCordobas(_stats!['incomeThisMonth']),
+                                  color: const Color(0xFF3B82F6),
+                                  textColor: textColor,
+                                  mutedColor: mutedColor,
+                                  cardColor: cardColor,
+                                ),
                               ),
-                              const SizedBox(height: 12),
-                              _StatRow(
-                                icon: Iconsax.close_circle,
-                                label: 'Canceladas',
-                                value: _stats!['cancelledAppointments'].toString(),
-                                color: const Color(0xFFEF4444),
-                                textColor: textColor,
-                                mutedColor: mutedColor,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Iconsax.profile_2user,
+                                  label: 'Clientes Atendidos',
+                                  value: _stats!['clientsServed'].toString(),
+                                  color: const Color(0xFF8B5CF6),
+                                  textColor: textColor,
+                                  mutedColor: mutedColor,
+                                  cardColor: cardColor,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _StatCard(
+                                  icon: Iconsax.chart,
+                                  label: 'Promedio por Cliente',
+                                  value: MoneyFormatter.formatCordobas(_stats!['averagePerClient']),
+                                  color: const Color(0xFFF59E0B),
+                                  textColor: textColor,
+                                  mutedColor: mutedColor,
+                                  cardColor: cardColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 24),
+                          child: Text(
+                            'CITAS HOY',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                              color: sectionHeaderColor,
+                            ),
+                          ),
+                        ),
+                        IosGroupedCard(
+                          cardColor: cardColor,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                                child: _StatRow(
+                                  icon: Iconsax.tick_circle,
+                                  label: 'Completadas',
+                                  value: _stats!['completedAppointments'].toString(),
+                                  color: accentColor,
+                                  textColor: textColor,
+                                  mutedColor: mutedColor,
+                                ),
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 0.5,
+                                indent: 16,
+                                endIndent: 16,
+                                color: borderColor.withValues(alpha: 0.75),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                                child: _StatRow(
+                                  icon: Iconsax.close_circle,
+                                  label: 'Canceladas',
+                                  value: _stats!['cancelledAppointments'].toString(),
+                                  color: const Color(0xFFEF4444),
+                                  textColor: textColor,
+                                  mutedColor: mutedColor,
+                                ),
                               ),
                             ],
                           ),
@@ -283,7 +312,6 @@ class _StatCard extends StatelessWidget {
   final Color textColor;
   final Color mutedColor;
   final Color cardColor;
-  final Color borderColor;
 
   const _StatCard({
     required this.icon,
@@ -293,7 +321,6 @@ class _StatCard extends StatelessWidget {
     required this.textColor,
     required this.mutedColor,
     required this.cardColor,
-    required this.borderColor,
   });
 
   @override
@@ -302,8 +329,14 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

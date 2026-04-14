@@ -86,7 +86,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     const accentColor = Color(0xFF10B981);
     const accentLight = Color(0xFF34D399);
-    const bgColor = Color(0xFFF0FDF4);
+    const bgColor = Colors.white;
     const cardColor = Colors.white;
     const textColor = Color(0xFF1F2937);
     const mutedColor = Color(0xFF6B7280);
@@ -428,7 +428,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   )
                 : null,
             filled: true,
-            fillColor: const Color(0xFFF9FAFB),
+            fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,

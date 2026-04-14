@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'modern_snackbar.dart';
 
-/// Helper centralizado para mostrar snackbars con fallback a GlobalKey
-/// Evita crashes cuando el context está desmontado
 class SnackbarHelper {
-  // GlobalKey para acceso cross-route
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
-  /// Muestra un snackbar de éxito con fallback seguro
   static void showSuccess({
     BuildContext? context,
     required String title,
@@ -22,7 +18,6 @@ class SnackbarHelper {
     );
   }
 
-  /// Muestra un snackbar de error con fallback seguro
   static void showError({
     BuildContext? context,
     required String title,
@@ -36,7 +31,6 @@ class SnackbarHelper {
     );
   }
 
-  /// Muestra un snackbar de advertencia con fallback seguro
   static void showWarning({
     BuildContext? context,
     required String title,
@@ -50,7 +44,6 @@ class SnackbarHelper {
     );
   }
 
-  /// Muestra un snackbar de información con fallback seguro
   static void showInfo({
     BuildContext? context,
     required String title,
@@ -64,14 +57,12 @@ class SnackbarHelper {
     );
   }
 
-  /// Método interno para mostrar snackbar con fallback
   static void _showSnackbar({
     BuildContext? context,
     required String title,
     required String message,
     required SnackbarType type,
   }) {
-    // Prioridad 1: Usar context si está disponible y montado
     if (context != null && context.mounted) {
       try {
         switch (type) {
@@ -89,88 +80,105 @@ class SnackbarHelper {
             break;
         }
         return;
-      } catch (e) {
-        // Si falla con context, intentar con GlobalKey
-      }
+      } catch (_) {}
     }
 
-    // Prioridad 2: Usar GlobalKey como fallback
-    final scaffoldMessenger = scaffoldMessengerKey.currentState;
-    if (scaffoldMessenger != null) {
-      try {
-        final snackBar = _buildSnackBar(title, message, type);
-        scaffoldMessenger.showSnackBar(snackBar);
-        return;
-      } catch (e) {
-        // Si falla, no hacer nada (evitar crash)
-      }
+    final messenger = scaffoldMessengerKey.currentState;
+    if (messenger != null) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(_buildFallbackSnackBar(title, message, type));
     }
-
-    // Si todo falla, solo loguear en debug
-    debugPrint('⚠️ [SNACKBAR] No se pudo mostrar snackbar: $title - $message');
   }
 
-  /// Construye un SnackBar básico para fallback
-  static SnackBar _buildSnackBar(String title, String message, SnackbarType type) {
-    Color backgroundColor;
+  static SnackBar _buildFallbackSnackBar(
+    String title,
+    String message,
+    SnackbarType type,
+  ) {
+    Color accentColor;
     IconData icon;
-
     switch (type) {
       case SnackbarType.success:
-        backgroundColor = Colors.green;
-        icon = Icons.check_circle;
+        accentColor = const Color(0xFF10B981);
+        icon = Icons.check_circle_outline_rounded;
         break;
       case SnackbarType.error:
-        backgroundColor = Colors.red;
-        icon = Icons.error;
+        accentColor = const Color(0xFFEF4444);
+        icon = Icons.error_outline_rounded;
         break;
       case SnackbarType.warning:
-        backgroundColor = Colors.orange;
-        icon = Icons.warning;
+        accentColor = const Color(0xFFF59E0B);
+        icon = Icons.warning_amber_rounded;
         break;
       case SnackbarType.info:
-        backgroundColor = Colors.blue;
-        icon = Icons.info;
+        accentColor = const Color(0xFF3B82F6);
+        icon = Icons.info_outline_rounded;
         break;
     }
 
     return SnackBar(
-      content: Row(
-        children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  message,
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: backgroundColor,
+      elevation: 0,
+      backgroundColor: Colors.transparent,
       behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+      duration: const Duration(seconds: 4),
+      content: Container(
+        padding: const EdgeInsets.fromLTRB(0, 12, 8, 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 56,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            Icon(icon, color: accentColor, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    message,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Color(0xFFD1D5DB)),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Cerrar',
+              onPressed: () => scaffoldMessengerKey.currentState?.hideCurrentSnackBar(),
+              icon: const Icon(Icons.close_rounded),
+              color: const Color(0xFFE5E7EB),
+              iconSize: 18,
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-enum SnackbarType {
-  success,
-  error,
-  warning,
-  info,
-}
-
+enum SnackbarType { success, error, warning, info }

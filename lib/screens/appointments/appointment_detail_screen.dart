@@ -839,7 +839,7 @@ class _AppointmentDetailScreenState extends ConsumerState<AppointmentDetailScree
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
     final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
-    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF0FDF4);
+    final bgColor = isDark ? const Color(0xFF0A0A0B) : Colors.white;
     const accentColor = Color(0xFF10B981);
     final statusColor = _getStatusColor(_appointment.status);
 

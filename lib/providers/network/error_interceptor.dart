@@ -1,12 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-/// Interceptor centralizado para manejo de errores y métricas de Dio
-/// Traduce códigos de estado HTTP a mensajes de error amigables
+/// Interceptor centralizado para manejo de errores y métricas de Dio.
+/// Si se recibe 403 con code "TRIAL_EXPIRED", se llama a [onTrialExpired].
 class ErrorInterceptor extends Interceptor {
+  ErrorInterceptor({this.onTrialExpired});
+
+  final void Function()? onTrialExpired;
+
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Traducir errores de Dio a mensajes amigables
+    if (err.response?.statusCode == 403) {
+      final data = err.response!.data;
+      if (data is Map<String, dynamic> && data['code'] == 'TRIAL_EXPIRED') {
+        onTrialExpired?.call();
+      }
+    }
     final userFriendlyMessage = _translateError(err);
     
     // 🐛 FIX: No loguear 404 esperados (comportamiento normal, no errores)

@@ -7,76 +7,146 @@ import '../edit_profile_screen.dart';
 class ProfileHeader extends StatelessWidget {
   final BarberDto profile;
   final VoidCallback onProfileUpdated;
+  /// Cambiar foto (galería/cámara); si es null no se muestra el badge de cámara.
+  final VoidCallback? onPhotoTap;
+  /// Ver foto en pantalla completa cuando ya hay imagen.
+  final VoidCallback? onPhotoViewTap;
   final Color textColor;
   final Color mutedColor;
   final Color cardColor;
   final Color borderColor;
   final Color accentColor;
+  /// Sin borde inferior; para tarjeta redondeada sobre fondo agrupado (estilo iOS).
+  final bool iosGrouped;
 
   const ProfileHeader({
     super.key,
     required this.profile,
     required this.onProfileUpdated,
+    this.onPhotoTap,
+    this.onPhotoViewTap,
     required this.textColor,
     required this.mutedColor,
     required this.cardColor,
     required this.borderColor,
     required this.accentColor,
+    this.iosGrouped = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: EdgeInsets.symmetric(
+        horizontal: iosGrouped ? 16 : 20,
+        vertical: iosGrouped ? 18 : 20,
+      ),
       decoration: BoxDecoration(
-        color: cardColor,
-        border: Border(
-          bottom: BorderSide(color: borderColor, width: 1),
-        ),
+        color: iosGrouped ? Colors.transparent : cardColor,
+        border: iosGrouped
+            ? null
+            : Border(
+                bottom: BorderSide(color: borderColor, width: 1),
+              ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Avatar con logo
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  accentColor,
-                  const Color(0xFF059669),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/logobarbe.png',
-                width: 64,
-                height: 64,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Iconsax.scissor5,
-                    color: Colors.white,
-                    size: 32,
-                  );
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  final hasPhoto = profile.profileImageUrl != null &&
+                      profile.profileImageUrl!.isNotEmpty;
+                  if (hasPhoto && onPhotoViewTap != null) {
+                    onPhotoViewTap!();
+                  } else if (onPhotoTap != null) {
+                    onPhotoTap!();
+                  }
                 },
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accentColor,
+                        const Color(0xFF059669),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: ClipOval(
+                    child: profile.profileImageUrl != null &&
+                            profile.profileImageUrl!.isNotEmpty
+                        ? Image.network(
+                            profile.profileImageUrl!,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildPlaceholderAvatar();
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.white,
+                                alignment: Alignment.center,
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: accentColor,
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            (loadingProgress.expectedTotalBytes ?? 1)
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : _buildPlaceholderAvatar(),
+                  ),
+                ),
               ),
-            ),
+              if (onPhotoTap != null)
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: GestureDetector(
+                    onTap: onPhotoTap,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: const Icon(
+                        Iconsax.camera,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 16),
-          // Información
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,10 +155,11 @@ class ProfileHeader extends StatelessWidget {
                 Text(
                   profile.name,
                   style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontSize: iosGrouped ? 17 : 18,
+                    fontWeight: FontWeight.w600,
                     color: textColor,
                     height: 1.2,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 if (profile.email != null) ...[
@@ -129,7 +200,6 @@ class ProfileHeader extends StatelessWidget {
               ],
             ),
           ),
-          // Botón editar
           Container(
             width: 36,
             height: 36,
@@ -158,5 +228,23 @@ class ProfileHeader extends StatelessWidget {
       ),
     );
   }
-}
 
+  Widget _buildPlaceholderAvatar() {
+    return Container(
+      color: Colors.white,
+      child: Image.asset(
+        'assets/images/logobarbe.png',
+        width: 56,
+        height: 56,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Iconsax.scissor5,
+            color: Colors.white,
+            size: 28,
+          );
+        },
+      ),
+    );
+  }
+}

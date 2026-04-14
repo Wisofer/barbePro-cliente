@@ -51,7 +51,41 @@ class MockBarberService {
       qrUrl: existing.qrUrl,
       createdAt: existing.createdAt,
       email: existing.email,
+      profileImageUrl: existing.profileImageUrl,
+      trialEndsAt: existing.trialEndsAt,
+      isPro: existing.isPro,
+      proActivatedAt: existing.proActivatedAt,
     );
+  }
+
+  Future<BarberDto> uploadProfilePhoto(String imageBase64) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final existing = MockData.mockBarberProfile;
+    return BarberDto(
+      id: existing.id,
+      name: existing.name,
+      businessName: existing.businessName,
+      phone: existing.phone,
+      slug: existing.slug,
+      isActive: existing.isActive,
+      qrUrl: existing.qrUrl,
+      createdAt: existing.createdAt,
+      email: existing.email,
+      profileImageUrl: existing.profileImageUrl ?? 'https://via.placeholder.com/200',
+      trialEndsAt: existing.trialEndsAt,
+      isPro: existing.isPro,
+      proActivatedAt: existing.proActivatedAt,
+    );
+  }
+
+  Future<List<SocialLinkDto>> getSocialLinks() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return [];
+  }
+
+  Future<List<SocialLinkDto>> updateSocialLinks(List<Map<String, dynamic>> links) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return [];
   }
 
   Future<Map<String, dynamic>> getQrCode() async {

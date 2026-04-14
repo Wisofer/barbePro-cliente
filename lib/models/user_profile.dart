@@ -1,3 +1,5 @@
+import 'account_deletion.dart';
+
 class UserProfile {
   final String userId;
   final String userName;
@@ -30,6 +32,15 @@ class UserProfile {
   final int? starCount; // Contador de estrellas del usuario
   final bool? hasRated; // Si el usuario actual ya marcó con estrella a este usuario
 
+  final bool accountDeletionPending;
+  final DateTime? accountDeletionRequestedAtUtc;
+  final DateTime? accountDeletionScheduledForUtc;
+  final int? accountDeletionGracePeriodDays;
+
+  /// Suscripción / trial (dueño; se sincroniza con GET barber/profile y suscripción).
+  final DateTime? trialEndsAt;
+  final bool isPro;
+
   UserProfile({
     required this.userId,
     required this.userName,
@@ -61,7 +72,59 @@ class UserProfile {
     this.country,
     this.starCount,
     this.hasRated,
+    this.accountDeletionPending = false,
+    this.accountDeletionRequestedAtUtc,
+    this.accountDeletionScheduledForUtc,
+    this.accountDeletionGracePeriodDays,
+    this.trialEndsAt,
+    this.isPro = false,
   });
+
+  /// Trial vencido sin Pro (alineado con GlowNic).
+  bool get isTrialExpired =>
+      !isPro && trialEndsAt != null && trialEndsAt!.isBefore(DateTime.now());
+
+  /// Actualiza campos desde GET /account/deletion o tras POST.
+  UserProfile applyAccountDeletionStatus(AccountDeletionStatusResponse status) {
+    return UserProfile(
+      userId: userId,
+      userName: userName,
+      role: role,
+      nombre: nombre,
+      apellido: apellido,
+      email: email,
+      phone: phone,
+      direccion: direccion,
+      avatar: avatar,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
+      sexo: sexo,
+      fechaNacimiento: fechaNacimiento,
+      dni: dni,
+      lugarNacimiento: lugarNacimiento,
+      domicilio: domicilio,
+      estadoCivil: estadoCivil,
+      ocupacion: ocupacion,
+      profileImageUrl: profileImageUrl,
+      coverImageUrl: coverImageUrl,
+      iconImageUrl: iconImageUrl,
+      handle: handle,
+      displayName: displayName,
+      description: description,
+      countryCode: countryCode,
+      nationalNumber: nationalNumber,
+      country: country,
+      starCount: starCount,
+      hasRated: hasRated,
+      accountDeletionPending: status.pending,
+      accountDeletionRequestedAtUtc: status.requestedAtUtc,
+      accountDeletionScheduledForUtc: status.scheduledForUtc,
+      accountDeletionGracePeriodDays: status.gracePeriodDays,
+      trialEndsAt: trialEndsAt,
+      isPro: isPro,
+    );
+  }
 
   /// Getter para obtener el nombre completo del usuario
   String get nombreCompleto {
@@ -109,6 +172,20 @@ class UserProfile {
         country: _safeString(json['country']),
         starCount: _safeToInt(json['starCount'] ?? json['star_count']),
         hasRated: _safeToBool(json['hasRated'] ?? json['has_rated'] ?? json['hasRatedUser'] ?? json['has_rated_user']),
+        accountDeletionPending: json['accountDeletionPending'] == true,
+        accountDeletionRequestedAtUtc: json['accountDeletionRequestedAtUtc'] != null
+            ? DateTime.tryParse(json['accountDeletionRequestedAtUtc'].toString())
+            : null,
+        accountDeletionScheduledForUtc: json['accountDeletionScheduledForUtc'] != null
+            ? DateTime.tryParse(json['accountDeletionScheduledForUtc'].toString())
+            : null,
+        accountDeletionGracePeriodDays: json['accountDeletionGracePeriodDays'] != null
+            ? int.tryParse(json['accountDeletionGracePeriodDays'].toString())
+            : null,
+        trialEndsAt: json['trialEndsAt'] != null
+            ? DateTime.tryParse(json['trialEndsAt'].toString())
+            : null,
+        isPro: json['isPro'] == true,
       );
     } catch (e) {
       rethrow;
@@ -147,6 +224,12 @@ class UserProfile {
       'country': country,
       'starCount': starCount,
       'hasRated': hasRated,
+      'accountDeletionPending': accountDeletionPending,
+      'accountDeletionRequestedAtUtc': accountDeletionRequestedAtUtc?.toIso8601String(),
+      'accountDeletionScheduledForUtc': accountDeletionScheduledForUtc?.toIso8601String(),
+      'accountDeletionGracePeriodDays': accountDeletionGracePeriodDays,
+      'trialEndsAt': trialEndsAt?.toIso8601String(),
+      'isPro': isPro,
     };
   }
 

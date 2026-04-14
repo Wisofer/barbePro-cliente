@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import '../../models/service.dart';
 import '../../services/api/appointment_service.dart';
 import '../../services/api/employee_appointment_service.dart';
@@ -25,12 +26,28 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   final _clientNameController = TextEditingController();
   final _clientPhoneController = TextEditingController();
   
-  List<int> _selectedServiceIds = []; // Cambiado a lista para múltiples servicios
+  final List<int> _selectedServiceIds = [];
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   List<ServiceDto> _services = [];
   bool _isLoading = false;
   bool _isLoadingServices = true;
+
+  static const Color _accent = Color(0xFF10B981);
+
+  Widget _pickerThemeWrapper(BuildContext context, Widget? child) {
+    if (child == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Theme(
+      data: theme.copyWith(
+        colorScheme: theme.colorScheme.copyWith(
+          primary: _accent,
+          secondary: _accent,
+        ),
+      ),
+      child: child,
+    );
+  }
 
   @override
   void initState() {
@@ -79,21 +96,19 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   }
 
   Future<void> _selectDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final locale = Localizations.localeOf(context);
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF10B981),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      locale: locale,
+      initialDate: _selectedDate ?? today,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
+      helpText: 'Selecciona la fecha',
+      cancelText: 'Cancelar',
+      confirmText: 'Aceptar',
+      builder: (context, child) => _pickerThemeWrapper(context, child),
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
@@ -101,22 +116,15 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   }
 
   Future<void> _selectTime() async {
-    // Usar modo input para permitir cualquier minuto (00-59)
+    // Mismo criterio que GlowNic: modo entrada para cualquier minuto (00–59).
     final picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
-      initialEntryMode: TimePickerEntryMode.input, // Permite entrada manual de cualquier minuto
-      helpText: 'Selecciona la hora (permite cualquier minuto)',
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF10B981),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      initialEntryMode: TimePickerEntryMode.input,
+      helpText: 'Selecciona la hora (cualquier minuto)',
+      cancelText: 'Cancelar',
+      confirmText: 'Aceptar',
+      builder: (context, child) => _pickerThemeWrapper(context, child),
     );
     if (picked != null) {
       setState(() => _selectedTime = picked);
@@ -185,7 +193,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cita creada exitosamente'),
-            backgroundColor: Color(0xFF10B981),
+            backgroundColor: _accent,
           ),
         );
         Navigator.pop(context, true);
@@ -230,8 +238,8 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
     final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
-    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF0FDF4);
-    const accentColor = Color(0xFF10B981);
+    final bgColor = isDark ? const Color(0xFF0A0A0B) : Colors.white;
+    const accentColor = _accent;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -691,7 +699,8 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                 Expanded(
                   child: Text(
                     date != null
-                        ? '${date.day}/${date.month}/${date.year}'
+                        ? DateFormat.yMd(Localizations.localeOf(context).toString())
+                            .format(date)
                         : 'Seleccionar fecha',
                     style: GoogleFonts.inter(
                       fontSize: 15,
@@ -745,9 +754,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    time != null
-                        ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
-                        : 'Seleccionar hora',
+                    time == null ? 'Seleccionar hora' : time.format(context),
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       color: time != null ? textColor : mutedColor,

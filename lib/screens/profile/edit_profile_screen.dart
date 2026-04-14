@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../models/barber.dart';
 import '../../services/api/barber_service.dart';
 import '../../utils/audio_helper.dart';
+import 'widgets/profile_ios_section.dart' show IosGroupedCard;
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   final BarberDto profile;
@@ -122,110 +122,136 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
-          'Información Personal',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          'Información personal',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.only(bottom: 28),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Edita tu información personal',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: mutedColor,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Text(
+                'Los datos se muestran en tu perfil y en la reserva pública.',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: mutedColor,
+                  height: 1.4,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Nombre
-            _TextField(
-              controller: _nameController,
-              label: 'Nombre',
-              icon: Iconsax.user,
-              hintText: 'Tu nombre completo',
-              textColor: textColor,
-              mutedColor: mutedColor,
-              cardColor: cardColor,
-              borderColor: borderColor,
-              accentColor: accentColor,
-            ),
-            const SizedBox(height: 16),
-
-            // Nombre del negocio
-            _TextField(
-              controller: _businessNameController,
-              label: 'Nombre del Negocio',
-              icon: Iconsax.shop,
-              hintText: 'Nombre de tu barbería (opcional)',
-              textColor: textColor,
-              mutedColor: mutedColor,
-              cardColor: cardColor,
-              borderColor: borderColor,
-              accentColor: accentColor,
-              optional: true,
-            ),
-            const SizedBox(height: 16),
-
-            // Teléfono
-            _TextField(
-              controller: _phoneController,
-              label: 'Teléfono',
-              icon: Iconsax.call,
-              hintText: 'Tu número de teléfono',
-              textColor: textColor,
-              mutedColor: mutedColor,
-              cardColor: cardColor,
-              borderColor: borderColor,
-              accentColor: accentColor,
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 32),
-
-            // Botón guardar
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            Padding(
+              padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+              child: Text(
+                'DATOS',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                  color: sectionHeaderColor,
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            IosGroupedCard(
+              cardColor: cardColor,
+              child: Column(
+                children: [
+                  _GroupedProfileField(
+                    controller: _nameController,
+                    label: 'Nombre',
+                    icon: Iconsax.user,
+                    hintText: 'Tu nombre completo',
+                    textColor: textColor,
+                    mutedColor: mutedColor,
+                    accentColor: accentColor,
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    indent: 16,
+                    endIndent: 16,
+                    color: borderColor.withValues(alpha: 0.75),
+                  ),
+                  _GroupedProfileField(
+                    controller: _businessNameController,
+                    label: 'Nombre del negocio (opcional)',
+                    icon: Iconsax.shop,
+                    hintText: 'Nombre comercial',
+                    textColor: textColor,
+                    mutedColor: mutedColor,
+                    accentColor: accentColor,
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    indent: 16,
+                    endIndent: 16,
+                    color: borderColor.withValues(alpha: 0.75),
+                  ),
+                  _GroupedProfileField(
+                    controller: _phoneController,
+                    label: 'Teléfono',
+                    icon: Iconsax.call,
+                    hintText: 'Tu número',
+                    textColor: textColor,
+                    mutedColor: mutedColor,
+                    accentColor: accentColor,
+                    keyboardType: TextInputType.phone,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Guardar',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      )
-                    : Text(
-                        'Guardar Cambios',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                ),
               ),
             ),
           ],
@@ -235,76 +261,47 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 }
 
-class _TextField extends StatelessWidget {
+class _GroupedProfileField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final IconData icon;
   final String hintText;
   final Color textColor;
   final Color mutedColor;
-  final Color cardColor;
-  final Color borderColor;
   final Color accentColor;
-  final bool optional;
   final TextInputType? keyboardType;
 
-  const _TextField({
+  const _GroupedProfileField({
     required this.controller,
     required this.label,
     required this.icon,
     required this.hintText,
     required this.textColor,
     required this.mutedColor,
-    required this.cardColor,
-    required this.borderColor,
     required this.accentColor,
-    this.optional = false,
     this.keyboardType,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label + (optional ? ' (Opcional)' : ''),
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: textColor,
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: GoogleFonts.inter(fontSize: 16, color: textColor),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.inter(color: mutedColor, fontSize: 13),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          hintText: hintText,
+          hintStyle: GoogleFonts.inter(color: mutedColor.withValues(alpha: 0.7)),
+          prefixIcon: Icon(icon, color: accentColor, size: 20),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              color: textColor,
-            ),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: GoogleFonts.inter(
-                fontSize: 14,
-                color: mutedColor,
-              ),
-              prefixIcon: Icon(icon, color: accentColor, size: 20),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

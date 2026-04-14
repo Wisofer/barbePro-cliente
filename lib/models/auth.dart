@@ -97,6 +97,10 @@ class UserDto {
   final String? authProvider; // "email" | "google.com" | "apple.com"
   final BarberDto? barber;
   final SubscriptionDto? subscription;
+  final bool accountDeletionPending;
+  final DateTime? accountDeletionRequestedAtUtc;
+  final DateTime? accountDeletionScheduledForUtc;
+  final int? accountDeletionGracePeriodDays;
 
   UserDto({
     required this.id,
@@ -105,6 +109,10 @@ class UserDto {
     this.authProvider,
     this.barber,
     this.subscription,
+    this.accountDeletionPending = false,
+    this.accountDeletionRequestedAtUtc,
+    this.accountDeletionScheduledForUtc,
+    this.accountDeletionGracePeriodDays,
   });
 
   factory UserDto.fromJson(Map<String, dynamic> json) => UserDto(
@@ -117,6 +125,16 @@ class UserDto {
             ? SubscriptionDto.fromJson(
                 Map<String, dynamic>.from(json['subscription'] as Map),
               )
+            : null,
+        accountDeletionPending: json['accountDeletionPending'] == true,
+        accountDeletionRequestedAtUtc: json['accountDeletionRequestedAtUtc'] != null
+            ? DateTime.tryParse(json['accountDeletionRequestedAtUtc'].toString())
+            : null,
+        accountDeletionScheduledForUtc: json['accountDeletionScheduledForUtc'] != null
+            ? DateTime.tryParse(json['accountDeletionScheduledForUtc'].toString())
+            : null,
+        accountDeletionGracePeriodDays: json['accountDeletionGracePeriodDays'] != null
+            ? int.tryParse(json['accountDeletionGracePeriodDays'].toString())
             : null,
       );
 }

@@ -8,6 +8,9 @@ import '../../services/api/barber_service.dart';
 import '../../services/api/employee_finance_service.dart';
 import '../../utils/money_formatter.dart';
 import '../../utils/role_helper.dart';
+import '../profile/profile_palette.dart';
+import '../profile/widgets/profile_ios_section.dart' show IosGroupedCard;
+import '../profile/widgets/ios_grouped_row.dart';
 import 'income_screen.dart';
 import 'expenses_screen.dart';
 
@@ -136,164 +139,286 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = ProfilePalette.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
-    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB);
-    const accentColor = Color(0xFF10B981);
+    final groupedBg = isDark ? const Color(0xFF000000) : Colors.white;
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
+    final textColor = p.textColor;
+    final mutedColor = p.mutedColor;
+    final cardColor = p.cardColor;
+    final borderColor = p.borderColor;
+    final accentColor = p.accent;
+    const incomeGreen = Color(0xFF22C55E);
+    const expenseRed = Color(0xFFEF4444);
 
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator(color: accentColor));
-    }
-
-    if (_summary == null) {
-      return _ErrorState(
-        errorMessage: _errorMessage,
-        onRetry: _loadSummary,
-        textColor: textColor,
-        mutedColor: mutedColor,
-        accentColor: accentColor,
+      return Scaffold(
+        backgroundColor: groupedBg,
+        body: SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(color: accentColor),
+          ),
+        ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadSummary,
-      color: accentColor,
-      child: Container(
-        color: bgColor,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            // Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                child: Text(
-                  'Finanzas',
-                  style: GoogleFonts.inter(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: textColor,
-                    letterSpacing: -0.5,
+    if (_summary == null) {
+      return Scaffold(
+        backgroundColor: groupedBg,
+        body: SafeArea(
+          child: _ErrorState(
+            errorMessage: _errorMessage,
+            onRetry: _loadSummary,
+            textColor: textColor,
+            mutedColor: mutedColor,
+            accentColor: accentColor,
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: groupedBg,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadSummary,
+          color: accentColor,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: Text(
+                    'Finanzas',
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                      letterSpacing: -0.6,
+                      height: 1.15,
+                    ),
                   ),
                 ),
               ),
-            ),
-
-            // Card principal con ganancia del mes
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildProfitCard(textColor, mutedColor, accentColor),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-            // Stats del mes
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildMonthStats(textColor, mutedColor, cardColor, borderColor, accentColor),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-            // Accesos rápidos
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildQuickAccess(textColor, mutedColor, cardColor, borderColor, accentColor),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-            // Resumen total
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: _buildTotalSummary(textColor, mutedColor, cardColor, borderColor, accentColor),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildProfitCard(Color textColor, Color mutedColor, Color accentColor) {
-    final profit = _summary!.profitThisMonth;
-    final isPositive = profit >= 0;
-    
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isPositive
-              ? [accentColor, accentColor.withOpacity(0.8)]
-              : [const Color(0xFFEF4444), const Color(0xFFDC2626)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: (isPositive ? accentColor : const Color(0xFFEF4444)).withOpacity(0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isPositive ? Iconsax.arrow_up_2 : Iconsax.arrow_down_2,
-                  color: Colors.white,
-                  size: 20,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+                  child: Text(
+                    'Resumen de tu negocio.',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: mutedColor,
+                      height: 1.4,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                'Ganancia del Mes',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.white.withOpacity(0.9),
-                  fontWeight: FontWeight.w600,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+                  child: Text(
+                    'ESTE MES',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: sectionHeaderColor,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _buildProfitCard(mutedColor, cardColor, accentColor),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+                  child: Text(
+                    'INGRESOS Y EGRESOS',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: sectionHeaderColor,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _buildMonthInOut(cardColor, borderColor, textColor),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+                  child: Text(
+                    'ACCIONES',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: sectionHeaderColor,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _buildQuickAccessRows(
+                  textColor,
+                  mutedColor,
+                  cardColor,
+                  borderColor,
+                  incomeGreen,
+                  expenseRed,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+                  child: Text(
+                    'TOTAL ACUMULADO',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: sectionHeaderColor,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 28),
+                  child: _buildTotalSummary(
+                    textColor,
+                    mutedColor,
+                    cardColor,
+                    borderColor,
+                    accentColor,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            MoneyFormatter.formatCordobas(profit.abs()),
-            style: GoogleFonts.inter(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfitCard(Color mutedColor, Color cardColor, Color accentColor) {
+    final profit = _summary!.profitThisMonth;
+    final isPositive = profit >= 0;
+    final highlightColor = isPositive ? accentColor : const Color(0xFFEF4444);
+
+    return IosGroupedCard(
+      cardColor: cardColor,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'GANANCIA DEL MES',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+                color: mutedColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              MoneyFormatter.formatCordobas(profit.abs()),
+              style: GoogleFonts.inter(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: highlightColor,
+                letterSpacing: -0.8,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isPositive
+                  ? 'Los ingresos del mes cubren los egresos.'
+                  : 'Los egresos superan los ingresos del mes.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: mutedColor,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthInOut(Color cardColor, Color borderColor, Color textColor) {
+    return IosGroupedCard(
+      cardColor: cardColor,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(Iconsax.arrow_down, size: 18, color: const Color(0xFF22C55E)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Ingresos del mes',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+                Text(
+                  MoneyFormatter.formatCordobas(_summary!.incomeThisMonth),
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF22C55E),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            isPositive ? 'Ingresos superan egresos' : 'Egresos superan ingresos',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.8),
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 16,
+            endIndent: 16,
+            color: borderColor.withValues(alpha: 0.75),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(Iconsax.arrow_up, size: 18, color: const Color(0xFFEF4444)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Egresos del mes',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+                Text(
+                  MoneyFormatter.formatCordobas(_summary!.expensesThisMonth),
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFEF4444),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -301,106 +426,57 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
     );
   }
 
-  Widget _buildMonthStats(
+  Widget _buildQuickAccessRows(
     Color textColor,
     Color mutedColor,
     Color cardColor,
     Color borderColor,
-    Color accentColor,
+    Color incomeGreen,
+    Color expenseRed,
   ) {
-    final screenSize = MediaQuery.of(context).size;
-    final isSmallScreen = screenSize.width < 360;
-    final cardSpacing = isSmallScreen ? 8.0 : 10.0;
-    
-    return Row(
-      children: [
-        Expanded(
-          child: _FinanceMiniCard(
+    return IosGroupedCard(
+      cardColor: cardColor,
+      child: Column(
+        children: [
+          IosGroupedRow(
             icon: Iconsax.arrow_down,
-            value: MoneyFormatter.formatCordobas(_summary!.incomeThisMonth),
-            label: 'Ingresos',
-            color: const Color(0xFF22C55E),
+            title: 'Ingresos',
+            subtitle: 'Listado y movimientos',
+            accentColor: incomeGreen,
             textColor: textColor,
             mutedColor: mutedColor,
-            cardColor: cardColor,
-            borderColor: borderColor,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const IncomeScreen()),
+              );
+            },
+            trailing: Icon(Iconsax.arrow_right_3, size: 18, color: mutedColor),
           ),
-        ),
-        SizedBox(width: cardSpacing),
-        Expanded(
-          child: _FinanceMiniCard(
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 16,
+            endIndent: 16,
+            color: borderColor.withValues(alpha: 0.75),
+          ),
+          IosGroupedRow(
             icon: Iconsax.arrow_up,
-            value: MoneyFormatter.formatCordobas(_summary!.expensesThisMonth),
-            label: 'Egresos',
-            color: const Color(0xFFEF4444),
+            title: 'Egresos',
+            subtitle: 'Listado y movimientos',
+            accentColor: expenseRed,
             textColor: textColor,
             mutedColor: mutedColor,
-            cardColor: cardColor,
-            borderColor: borderColor,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ExpensesScreen()),
+              );
+            },
+            trailing: Icon(Iconsax.arrow_right_3, size: 18, color: mutedColor),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickAccess(
-    Color textColor,
-    Color mutedColor,
-    Color cardColor,
-    Color borderColor,
-    Color accentColor,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Accesos Rápidos',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: textColor,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickAccessButton(
-                title: 'Ingresos',
-                icon: Iconsax.arrow_down,
-                color: const Color(0xFF22C55E),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const IncomeScreen()),
-                  );
-                },
-                textColor: textColor,
-                cardColor: cardColor,
-                borderColor: borderColor,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _QuickAccessButton(
-                title: 'Egresos',
-                icon: Iconsax.arrow_up,
-                color: const Color(0xFFEF4444),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ExpensesScreen()),
-                  );
-                },
-                textColor: textColor,
-                cardColor: cardColor,
-                borderColor: borderColor,
-              ),
-            ),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -411,263 +487,108 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
     Color borderColor,
     Color accentColor,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return IosGroupedCard(
+      cardColor: cardColor,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: accentColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Iconsax.chart_2, color: accentColor, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Resumen Total',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _SummaryItem(
-            label: 'Ingresos Totales',
-            value: MoneyFormatter.formatCordobas(_summary!.totalIncome),
-            color: const Color(0xFF22C55E),
-            textColor: textColor,
-            mutedColor: mutedColor,
-          ),
-          const SizedBox(height: 12),
-          _SummaryItem(
-            label: 'Egresos Totales',
-            value: MoneyFormatter.formatCordobas(_summary!.totalExpenses),
-            color: const Color(0xFFEF4444),
-            textColor: textColor,
-            mutedColor: mutedColor,
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: accentColor.withAlpha(10),
-              borderRadius: BorderRadius.circular(10),
-            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Ganancia Neta',
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: Icon(Iconsax.chart_2, color: accentColor, size: 18),
                 ),
+                const SizedBox(width: 10),
                 Text(
-                  MoneyFormatter.formatCordobas(_summary!.netProfit),
+                  'Desde el inicio',
                   style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: accentColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FinanceMiniCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-  final Color textColor;
-  final Color mutedColor;
-  final Color cardColor;
-  final Color borderColor;
-
-  const _FinanceMiniCard({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-    required this.textColor,
-    required this.mutedColor,
-    required this.cardColor,
-    required this.borderColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isSmallScreen = screenSize.width < 360;
-    final isMediumScreen = screenSize.width >= 360 && screenSize.width < 400;
-    
-    // Ajustar tamaños según el tamaño de pantalla
-    final iconSize = isSmallScreen ? 30.0 : (isMediumScreen ? 33.0 : 36.0);
-    final iconInnerSize = isSmallScreen ? 16.0 : 18.0;
-    final padding = isSmallScreen ? 10.0 : (isMediumScreen ? 12.0 : 14.0);
-    final fontSize = isSmallScreen ? 14.0 : (isMediumScreen ? 15.0 : 16.0);
-    final labelFontSize = isSmallScreen ? 10.0 : 11.0;
-    final iconSpacing = isSmallScreen ? 10.0 : 12.0;
-    
-    return Container(
-      padding: EdgeInsets.all(padding),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 16,
+            endIndent: 16,
+            color: borderColor.withValues(alpha: 0.75),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: iconSize,
-            height: iconSize,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [color, color.withOpacity(0.7)],
-              ),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, color: Colors.white, size: iconInnerSize),
-          ),
-          SizedBox(height: iconSpacing),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: GoogleFonts.inter(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-                letterSpacing: -0.3,
-              ),
-              maxLines: 1,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: _SummaryItem(
+              label: 'Ingresos totales',
+              value: MoneyFormatter.formatCordobas(_summary!.totalIncome),
+              color: const Color(0xFF22C55E),
+              textColor: textColor,
+              mutedColor: mutedColor,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: labelFontSize,
-              color: mutedColor,
-              fontWeight: FontWeight.w500,
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 16,
+            endIndent: 16,
+            color: borderColor.withValues(alpha: 0.75),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: _SummaryItem(
+              label: 'Egresos totales',
+              value: MoneyFormatter.formatCordobas(_summary!.totalExpenses),
+              color: const Color(0xFFEF4444),
+              textColor: textColor,
+              mutedColor: mutedColor,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickAccessButton extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-  final Color textColor;
-  final Color cardColor;
-  final Color borderColor;
-
-  const _QuickAccessButton({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    required this.textColor,
-    required this.cardColor,
-    required this.borderColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 16,
+            endIndent: 16,
+            color: borderColor.withValues(alpha: 0.75),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [color, color.withOpacity(0.7)],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Ganancia neta',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
+                  Text(
+                    MoneyFormatter.formatCordobas(_summary!.netProfit),
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: accentColor,
+                    ),
                   ),
-                ),
+                ],
               ),
-              Icon(Iconsax.arrow_right_3, color: color, size: 18),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -732,7 +653,7 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -768,7 +689,11 @@ class _ErrorState extends StatelessWidget {
               label: const Text('Reintentar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: accentColor,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],

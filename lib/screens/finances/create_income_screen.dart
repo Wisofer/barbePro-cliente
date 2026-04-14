@@ -148,7 +148,7 @@ class _CreateIncomeScreenState extends ConsumerState<CreateIncomeScreen> {
     const accentColor = Color(0xFF10B981);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFF9FAFB),
+      backgroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
       appBar: AppBar(
         backgroundColor: cardColor,
         elevation: 0,

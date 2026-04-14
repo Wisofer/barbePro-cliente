@@ -5,9 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
 import '../../services/api/export_service.dart';
+import 'widgets/ios_grouped_row.dart';
+import 'widgets/profile_ios_section.dart';
 
 class ExportDataScreen extends ConsumerStatefulWidget {
   const ExportDataScreen({super.key});
@@ -164,227 +165,172 @@ class _ExportDataScreenState extends ConsumerState<ExportDataScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
+    Widget? trailingFor(String type) {
+      final loading = _isExporting && _exportingType == type;
+      if (loading) {
+        return const SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: accentColor,
+          ),
+        );
+      }
+      return Icon(
+        Iconsax.arrow_right_3,
+        color: mutedColor.withValues(alpha: 0.5),
+        size: 16,
+      );
+    }
+
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
-          'Exportar Datos',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          'Exportar datos',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.only(bottom: 28),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Exporta tus datos y reportes',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: mutedColor,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Text(
+                'Genera archivos para revisar o respaldar tu información.',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: mutedColor,
+                  height: 1.4,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Exportar reportes
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Reportes',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _ExportOption(
-                    icon: Iconsax.document_download,
-                    title: 'Reporte de Citas',
-                    subtitle: 'Exporta todas tus citas del mes',
-                    onTap: () => _showFormatDialog('Citas'),
-                    isLoading: _isExporting && _exportingType == 'Citas',
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 12),
-                  _ExportOption(
-                    icon: Iconsax.wallet_money,
-                    title: 'Reporte Financiero',
-                    subtitle: 'Exporta ingresos y egresos',
-                    onTap: () => _showFormatDialog('Financiero'),
-                    isLoading: _isExporting && _exportingType == 'Financiero',
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                  const SizedBox(height: 12),
-                  _ExportOption(
-                    icon: Iconsax.profile_2user,
-                    title: 'Reporte de Clientes',
-                    subtitle: 'Exporta lista de clientes',
-                    onTap: () => _showFormatDialog('Clientes'),
-                    isLoading: _isExporting && _exportingType == 'Clientes',
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                    accentColor: accentColor,
-                  ),
-                ],
-              ),
+            ProfileIosSection(
+              isFirst: true,
+              title: 'Reportes',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                IosGroupedRow(
+                  icon: Iconsax.document_download,
+                  title: 'Citas',
+                  subtitle: (_isExporting && _exportingType == 'Citas')
+                      ? 'Exportando…'
+                      : 'Todas las citas del periodo',
+                  trailing: trailingFor('Citas'),
+                  onTap: (_isExporting && _exportingType == 'Citas')
+                      ? null
+                      : () => _showFormatDialog('Citas'),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+                IosGroupedRow(
+                  icon: Iconsax.wallet_money,
+                  title: 'Financiero',
+                  subtitle: (_isExporting && _exportingType == 'Financiero')
+                      ? 'Exportando…'
+                      : 'Ingresos y egresos',
+                  trailing: trailingFor('Financiero'),
+                  onTap: (_isExporting && _exportingType == 'Financiero')
+                      ? null
+                      : () => _showFormatDialog('Financiero'),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+                IosGroupedRow(
+                  icon: Iconsax.profile_2user,
+                  title: 'Clientes',
+                  subtitle: (_isExporting && _exportingType == 'Clientes')
+                      ? 'Exportando…'
+                      : 'Lista de clientes',
+                  trailing: trailingFor('Clientes'),
+                  onTap: (_isExporting && _exportingType == 'Clientes')
+                      ? null
+                      : () => _showFormatDialog('Clientes'),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-
-            // Backup de datos
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Backup',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Crea una copia de seguridad de todos tus datos',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: mutedColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: (_isExporting && _exportingType == 'Backup Completo') ? null : () => _exportReport('Backup Completo', 'json'),
-                      icon: (_isExporting && _exportingType == 'Backup Completo')
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Icon(Iconsax.document_cloud),
-                      label: Text((_isExporting && _exportingType == 'Backup Completo') ? 'Exportando...' : 'Crear Backup'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentColor,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+            ProfileIosSection(
+              title: 'Respaldo',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Copia de seguridad completa de tus datos (JSON).',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: mutedColor,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ExportOption extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool isLoading;
-  final Color textColor;
-  final Color mutedColor;
-  final Color accentColor;
-
-  const _ExportOption({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.isLoading = false,
-    required this.textColor,
-    required this.mutedColor,
-    required this.accentColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: accentColor.withAlpha(20),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: isLoading
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: (_isExporting && _exportingType == 'Backup Completo')
+                              ? null
+                              : () => _exportReport('Backup Completo', 'json'),
+                          icon: (_isExporting && _exportingType == 'Backup Completo')
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Icon(Iconsax.document_cloud, size: 20),
+                          label: Text(
+                            (_isExporting && _exportingType == 'Backup Completo')
+                                ? 'Exportando…'
+                                : 'Crear backup',
+                            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accentColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
                       ),
-                    )
-                  : Icon(icon, color: accentColor, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isLoading ? 'Exportando...' : subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: mutedColor,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            if (!isLoading)
-              Icon(Iconsax.arrow_right_3, color: mutedColor, size: 18),
           ],
         ),
       ),

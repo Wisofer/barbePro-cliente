@@ -5,8 +5,10 @@ import 'package:system_movil/services/api/api_config.dart';
 import 'package:system_movil/services/storage/token_storage.dart';
 import 'package:system_movil/services/storage/fcm_token_storage.dart';
 import 'package:system_movil/services/notification/fcm_api.dart';
+import 'package:system_movil/providers/auth_provider.dart';
 import 'package:system_movil/providers/network/error_interceptor.dart';
 import 'package:system_movil/providers/network/token_refresh_interceptor.dart';
+import 'package:system_movil/providers/trial_expired_provider.dart';
 import 'package:system_movil/services/auth/social_auth_service.dart';
 
 /// Servicio de autenticación social (Google, Apple). Usado en login y en logout para limpiar sesión.
@@ -79,13 +81,18 @@ final dioProvider = Provider<Dio>((ref) {
     },
   ));
   
-  // Interceptor de refresh de tokens (maneja automáticamente los 401)
-  final tokenRefreshInterceptor = TokenRefreshInterceptor(tokenStorage);
+  final tokenRefreshInterceptor = TokenRefreshInterceptor(
+    tokenStorage,
+    onRefreshSuccess: (data) {
+      ref.read(authNotifierProvider.notifier).updateUserFromRefreshResponse(data);
+    },
+  );
   tokenRefreshInterceptor.setOriginalDio(dio);
   dio.interceptors.add(tokenRefreshInterceptor);
-  
-  // Interceptor de errores (debe ir al final)
-  dio.interceptors.add(ErrorInterceptor());
+
+  dio.interceptors.add(ErrorInterceptor(
+    onTrialExpired: () => ref.read(trialExpiredNotifierProvider.notifier).markExpired(),
+  ));
 
   return dio;
 });

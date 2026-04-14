@@ -7,10 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/auth.dart';
 import '../models/user_profile.dart';
 import '../services/api/auth_service.dart';
+import '../services/api/account_service.dart';
 import '../services/api/barber_service.dart';
 import '../services/notification/flutter_remote_notifications.dart';
 import '../services/notification/notification_handler.dart';
 import '../services/storage/token_storage.dart';
+import '../services/storage/trial_welcome_storage.dart';
+import '../services/storage/barber_profile_cache.dart';
+import 'trial_expired_provider.dart';
 import '../utils/jwt_decoder.dart';
 import 'providers.dart';
 
@@ -142,7 +146,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           await loadUserProfile();
           // ✅ Inicializar notificaciones si el usuario ya estaba autenticado
           try {
-            await _initializeNotifications();
+            await initializeNotifications();
           } catch (e) {
             // Error silencioso al inicializar notificaciones
           }
@@ -161,8 +165,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Inicializar notificaciones remotas (FCM)
-  Future<void> _initializeNotifications() async {
+  /// Inicializar notificaciones remotas (FCM). Público para llamar desde Home.
+  Future<void> initializeNotifications() async {
     try {
       // Solo inicializar si el usuario está autenticado y no está en modo demo
       if (state.isAuthenticated && !state.isDemoMode) {
@@ -193,7 +197,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       if (response.statusCode == 200 && response.data != null) {
-        // El backend devuelve: { "token": "...", "refreshToken": "...", "user": {...}, "role": "..." }
+        final raw = response.data;
+        if (raw is Map) {
+          _applyUserFromRefreshData(Map<String, dynamic>.from(raw));
+        }
         final newToken = response.data['token'] as String?;
         final newRefreshToken = response.data['refreshToken'] as String?;
         
@@ -210,6 +217,152 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  void _applyUserFromRefreshData(Map<String, dynamic>? data) {
+    final userJson = data?['user'];
+    if (userJson == null || userJson is! Map<String, dynamic>) return;
+    try {
+      final user = UserDto.fromJson(userJson);
+      final prev = state.userProfile;
+      if (prev == null) return;
+      var merged = _mergeUserDeletionIntoProfile(prev, user);
+      final sub = user.subscription;
+      if (sub != null) {
+        merged = UserProfile(
+          userId: merged.userId,
+          userName: merged.userName,
+          role: merged.role,
+          nombre: merged.nombre,
+          apellido: merged.apellido,
+          email: merged.email,
+          phone: merged.phone,
+          direccion: merged.direccion,
+          avatar: merged.avatar,
+          latitude: merged.latitude,
+          longitude: merged.longitude,
+          address: merged.address,
+          sexo: merged.sexo,
+          fechaNacimiento: merged.fechaNacimiento,
+          dni: merged.dni,
+          lugarNacimiento: merged.lugarNacimiento,
+          domicilio: merged.domicilio,
+          estadoCivil: merged.estadoCivil,
+          ocupacion: merged.ocupacion,
+          profileImageUrl: merged.profileImageUrl,
+          coverImageUrl: merged.coverImageUrl,
+          iconImageUrl: merged.iconImageUrl,
+          handle: merged.handle,
+          displayName: merged.displayName,
+          description: merged.description,
+          countryCode: merged.countryCode,
+          nationalNumber: merged.nationalNumber,
+          country: merged.country,
+          starCount: merged.starCount,
+          hasRated: merged.hasRated,
+          accountDeletionPending: merged.accountDeletionPending,
+          accountDeletionRequestedAtUtc: merged.accountDeletionRequestedAtUtc,
+          accountDeletionScheduledForUtc: merged.accountDeletionScheduledForUtc,
+          accountDeletionGracePeriodDays: merged.accountDeletionGracePeriodDays,
+          trialEndsAt: sub.trialEndsAt ?? merged.trialEndsAt,
+          isPro: sub.isProActive || merged.isPro,
+        );
+      }
+      state = state.copyWith(
+        userProfile: merged,
+        subscription: sub ?? state.subscription,
+      );
+    } catch (_) {}
+  }
+
+  UserProfile _mergeUserDeletionIntoProfile(UserProfile prev, UserDto user) {
+    return UserProfile(
+      userId: prev.userId,
+      userName: prev.userName,
+      role: prev.role,
+      nombre: prev.nombre,
+      apellido: prev.apellido,
+      email: prev.email,
+      phone: prev.phone,
+      direccion: prev.direccion,
+      avatar: prev.avatar,
+      latitude: prev.latitude,
+      longitude: prev.longitude,
+      address: prev.address,
+      sexo: prev.sexo,
+      fechaNacimiento: prev.fechaNacimiento,
+      dni: prev.dni,
+      lugarNacimiento: prev.lugarNacimiento,
+      domicilio: prev.domicilio,
+      estadoCivil: prev.estadoCivil,
+      ocupacion: prev.ocupacion,
+      profileImageUrl: prev.profileImageUrl,
+      coverImageUrl: prev.coverImageUrl,
+      iconImageUrl: prev.iconImageUrl,
+      handle: prev.handle,
+      displayName: prev.displayName,
+      description: prev.description,
+      countryCode: prev.countryCode,
+      nationalNumber: prev.nationalNumber,
+      country: prev.country,
+      starCount: prev.starCount,
+      hasRated: prev.hasRated,
+      accountDeletionPending: user.accountDeletionPending,
+      accountDeletionRequestedAtUtc: user.accountDeletionRequestedAtUtc,
+      accountDeletionScheduledForUtc: user.accountDeletionScheduledForUtc,
+      accountDeletionGracePeriodDays: user.accountDeletionGracePeriodDays,
+      trialEndsAt: prev.trialEndsAt,
+      isPro: prev.isPro,
+    );
+  }
+
+  /// Llamado desde el interceptor de refresh y desde [_tryRefreshToken].
+  void updateUserFromRefreshResponse(Map<String, dynamic>? data) {
+    _applyUserFromRefreshData(data);
+  }
+
+  /// GET /account/deletion — actualiza [UserProfile] con el estado de borrado programado.
+  Future<void> refreshAccountDeletionStatus() async {
+    if (!state.isAuthenticated || state.isDemoMode || state.userProfile == null) {
+      return;
+    }
+    try {
+      final status = await ref.read(accountServiceProvider).getDeletionStatus();
+      final prev = state.userProfile!;
+      state = state.copyWith(
+        userProfile: prev.applyAccountDeletionStatus(status),
+      );
+    } catch (_) {
+      // Endpoint ausente o red: no bloquear la app
+    }
+  }
+
+  /// POST /account/deletion/request (Barber o Employee; Admin recibe 400 en servidor).
+  Future<String?> requestAccountDeletion() async {
+    if (!state.isAuthenticated || state.isDemoMode) {
+      return 'No disponible en modo demo';
+    }
+    try {
+      await ref.read(accountServiceProvider).requestDeletion();
+      await refreshAccountDeletionStatus();
+      return null;
+    } catch (e) {
+      return e.toString().replaceAll('Exception: ', '');
+    }
+  }
+
+  /// POST /account/deletion/cancel
+  Future<String?> cancelAccountDeletion() async {
+    if (!state.isAuthenticated || state.isDemoMode) {
+      return 'No disponible en modo demo';
+    }
+    try {
+      await ref.read(accountServiceProvider).cancelDeletion();
+      await refreshAccountDeletionStatus();
+      return null;
+    } catch (e) {
+      return e.toString().replaceAll('Exception: ', '');
     }
   }
 
@@ -239,6 +392,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       apellido: '',
       email: user.email,
       phone: barber?.phone,
+      accountDeletionPending: user.accountDeletionPending,
+      accountDeletionRequestedAtUtc: user.accountDeletionRequestedAtUtc,
+      accountDeletionScheduledForUtc: user.accountDeletionScheduledForUtc,
+      accountDeletionGracePeriodDays: user.accountDeletionGracePeriodDays,
+      trialEndsAt: user.subscription?.trialEndsAt ?? barber?.trialEndsAt,
+      isPro: barber?.isPro ?? user.subscription?.isProActive ?? false,
+      profileImageUrl: barber?.profileImageUrl,
     );
     state = state.copyWith(
       userToken: loginResponse.token,
@@ -265,7 +425,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _dio.options.headers['Authorization'] = 'Bearer ${loginResponse.token}';
       _applyLoginResponse(loginResponse);
       try {
-        await _initializeNotifications();
+        await initializeNotifications();
       } catch (_) {}
       return true;
     } catch (e) {
@@ -324,6 +484,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       apellido: 'de Prueba',
       email: 'demo@barbenic.com',
       phone: '8888-8888',
+      isPro: true,
     );
     state = state.copyWith(
       isAuthenticated: true,
@@ -359,6 +520,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (_) {
       // Ignorar errores
     }
+    try {
+      await TrialWelcomeStorage.clear();
+    } catch (_) {}
+    try {
+      await BarberProfileCache.clear();
+    } catch (_) {}
+    try {
+      ref.read(trialExpiredNotifierProvider.notifier).clear();
+    } catch (_) {}
     try {
       await ref.read(socialAuthServiceProvider).signOutFromGoogleAndFirebase();
     } catch (_) {
@@ -398,6 +568,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final fallback = _buildProfileFromToken(state.userToken!);
       if (fallback != null) {
         state = state.copyWith(userProfile: fallback);
+        await refreshAccountDeletionStatus();
         return true;
       }
       return false;
@@ -414,6 +585,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         apellido: '',
         email: barberProfile.email,
         phone: barberProfile.phone,
+        profileImageUrl: barberProfile.profileImageUrl,
+        trialEndsAt: barberProfile.trialEndsAt,
+        isPro: barberProfile.isPro,
       );
       state = state.copyWith(userProfile: profile);
       // Actualizar suscripción (Trial/Pro/Expired)
@@ -421,6 +595,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final subscription = await barberService.getSubscription();
         state = state.copyWith(subscription: subscription);
       } catch (_) {}
+      await refreshAccountDeletionStatus();
       return true;
     } catch (e) {
       final message = e.toString();
@@ -435,6 +610,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final fallback = _buildProfileFromToken(state.userToken!);
         if (fallback != null) {
           state = state.copyWith(userProfile: fallback);
+          await refreshAccountDeletionStatus();
           return true;
         }
       }

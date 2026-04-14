@@ -6,6 +6,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../providers/settings/settings_notifier.dart';
 import '../../utils/audio_helper.dart';
+import 'widgets/ios_grouped_row.dart';
+import 'widgets/profile_ios_section.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -60,9 +62,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (settings.authorizationStatus == AuthorizationStatus.authorized ||
             settings.authorizationStatus == AuthorizationStatus.provisional) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('✅ Permisos de notificaciones activados'),
-              backgroundColor: const Color(0xFF10B981),
+            const SnackBar(
+              content: Text('Permisos de notificaciones activados'),
+              backgroundColor: Color(0xFF10B981),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -84,7 +86,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _openAppSettings() async {
     try {
       await openAppSettings();
-      // Refrescar permisos después de que el usuario regrese
       Future.delayed(const Duration(seconds: 1), () {
         _checkNotificationPermissions();
       });
@@ -107,21 +108,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     switch (_notificationSettings!.authorizationStatus) {
       case AuthorizationStatus.authorized:
-        return 'Recibirás notificaciones de citas y actualizaciones';
+        return 'Citas y actualizaciones';
       case AuthorizationStatus.denied:
-        return 'Las notificaciones están desactivadas. Actívalas en configuración';
+        return 'Desactivadas · Configúralas en el sistema';
       case AuthorizationStatus.notDetermined:
-        return 'Toca para activar las notificaciones';
+        return 'Toca para permitir';
       case AuthorizationStatus.provisional:
-        return 'Notificaciones activadas de forma provisional';
+        return 'Activadas de forma provisional';
     }
   }
 
-  Widget? _getPermissionTrailing(Color mutedColor) {
+  Widget? _buildPermissionTrailing(Color mutedColor) {
     if (_isCheckingPermissions) {
       return const SizedBox(
-        width: 20,
-        height: 20,
+        width: 22,
+        height: 22,
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
@@ -133,25 +134,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     switch (_notificationSettings!.authorizationStatus) {
       case AuthorizationStatus.authorized:
       case AuthorizationStatus.provisional:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withAlpha(20),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            'Activado',
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF10B981),
-            ),
+        return Text(
+          'Activado',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF10B981),
           ),
         );
       case AuthorizationStatus.denied:
-        return Icon(Iconsax.arrow_right_3, color: mutedColor.withAlpha(100), size: 18);
       case AuthorizationStatus.notDetermined:
-        return Icon(Iconsax.arrow_right_3, color: mutedColor.withAlpha(100), size: 18);
+        return Icon(Iconsax.arrow_right_3, color: mutedColor.withValues(alpha: 0.5), size: 16);
     }
   }
 
@@ -163,11 +156,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     switch (_notificationSettings!.authorizationStatus) {
       case AuthorizationStatus.authorized:
       case AuthorizationStatus.provisional:
-        return null; // Ya está activado, no hacer nada
+        return null;
       case AuthorizationStatus.denied:
-        return _openAppSettings; // Abrir configuración del sistema
+        return _openAppSettings;
       case AuthorizationStatus.notDetermined:
-        return _requestNotificationPermissions; // Solicitar permisos
+        return _requestNotificationPermissions;
     }
   }
 
@@ -176,176 +169,134 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final mutedColor = isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
-    
+
     final settings = ref.watch(settingsNotifierProvider);
 
+    Widget switchAccent(bool value, ValueChanged<bool> onChanged) {
+      return Switch.adaptive(
+        value: value,
+        onChanged: onChanged,
+        activeThumbColor: accentColor,
+        activeTrackColor: accentColor.withValues(alpha: 0.45),
+      );
+    }
+
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
           'Configuración',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.only(bottom: 28),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Personaliza tu experiencia',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: mutedColor,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Apariencia
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Apariencia',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SettingOption(
-                    icon: Iconsax.moon,
-                    title: 'Modo Oscuro',
-                    subtitle: settings.themeMode == ThemeMode.dark 
-                        ? 'Tema oscuro activado' 
-                        : settings.themeMode == ThemeMode.light
-                            ? 'Tema claro activado'
-                            : 'Siguiendo configuración del sistema',
-                    trailing: Switch(
-                      value: settings.themeMode == ThemeMode.dark,
-                      onChanged: (value) {
-                        ref.read(settingsNotifierProvider.notifier).setThemeMode(
-                          value ? ThemeMode.dark : ThemeMode.light,
-                        );
-                      },
-                      activeColor: accentColor,
-                    ),
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Notificaciones
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Notificaciones',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SettingOption(
-                    icon: Iconsax.notification,
-                    title: 'Notificaciones Push',
-                    subtitle: _getPermissionSubtitle(),
-                    trailing: _getPermissionTrailing(mutedColor),
-                    onTap: _getPermissionOnTap(),
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                  ),
-                  const SizedBox(height: 12),
-                  _SettingOption(
-                    icon: Iconsax.sound,
-                    title: 'Sonidos',
-                    subtitle: settings.soundsEnabled ? 'Activados' : 'Desactivados',
-                    trailing: Switch(
-                      value: settings.soundsEnabled,
-                      onChanged: (value) {
-                        ref.read(settingsNotifierProvider.notifier).setSoundsEnabled(value);
-                        // Actualizar AudioHelper inmediatamente
-                        AudioHelper.setEnabled(value);
-                      },
-                      activeColor: accentColor,
-                    ),
-                    textColor: textColor,
-                    mutedColor: mutedColor,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Idioma
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Idioma',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SettingOption(
-                    icon: Iconsax.global,
-                    title: 'Idioma de la Aplicación',
-                    subtitle: 'Español',
-                    trailing: Icon(Iconsax.arrow_right_3, color: mutedColor.withAlpha(100), size: 18),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Esta funcionalidad estará disponible'),
-                          backgroundColor: accentColor,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+            ProfileIosSection(
+              isFirst: true,
+              title: 'Apariencia',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                IosGroupedRow(
+                  icon: Iconsax.moon,
+                  title: 'Modo oscuro',
+                  subtitle: settings.themeMode == ThemeMode.dark
+                      ? 'Activado'
+                      : 'Desactivado',
+                  trailing: switchAccent(
+                    settings.themeMode == ThemeMode.dark,
+                    (value) {
+                      ref.read(settingsNotifierProvider.notifier).setThemeMode(
+                            value ? ThemeMode.dark : ThemeMode.light,
+                          );
                     },
-                    textColor: textColor,
-                    mutedColor: mutedColor,
                   ),
-                ],
-              ),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ],
+            ),
+            ProfileIosSection(
+              title: 'Notificaciones',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                IosGroupedRow(
+                  icon: Iconsax.notification,
+                  title: 'Notificaciones push',
+                  subtitle: _getPermissionSubtitle(),
+                  trailing: _buildPermissionTrailing(mutedColor),
+                  onTap: _getPermissionOnTap(),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+                IosGroupedRow(
+                  icon: Iconsax.sound,
+                  title: 'Sonidos',
+                  subtitle: settings.soundsEnabled ? 'Activados en la app' : 'Desactivados',
+                  trailing: switchAccent(
+                    settings.soundsEnabled,
+                    (value) {
+                      ref.read(settingsNotifierProvider.notifier).setSoundsEnabled(value);
+                      AudioHelper.setEnabled(value);
+                    },
+                  ),
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ],
+            ),
+            ProfileIosSection(
+              title: 'Idioma',
+              headerColor: sectionHeaderColor,
+              cardColor: cardColor,
+              borderColor: borderColor,
+              tiles: [
+                IosGroupedRow(
+                  icon: Iconsax.global,
+                  title: 'Idioma de la app',
+                  subtitle: 'Español',
+                  trailing: Icon(
+                    Iconsax.arrow_right_3,
+                    color: mutedColor.withValues(alpha: 0.5),
+                    size: 16,
+                  ),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Disponible próximamente'),
+                        backgroundColor: accentColor,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  accentColor: accentColor,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ],
             ),
           ],
         ),
@@ -353,67 +304,3 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 }
-
-class _SettingOption extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-  final Color textColor;
-  final Color mutedColor;
-
-  const _SettingOption({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.trailing,
-    this.onTap,
-    required this.textColor,
-    required this.mutedColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final widget = InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFF10B981), size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: mutedColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (trailing != null) trailing!,
-          ],
-        ),
-      ),
-    );
-
-    return widget;
-  }
-}
-

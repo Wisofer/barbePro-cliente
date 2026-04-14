@@ -181,7 +181,7 @@ class _CreateEditExpenseScreenState extends ConsumerState<CreateEditExpenseScree
     const expenseColor = Color(0xFFEF4444);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFF9FAFB),
+      backgroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
       appBar: AppBar(
         backgroundColor: cardColor,
         elevation: 0,

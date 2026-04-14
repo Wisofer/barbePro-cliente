@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../models/barber.dart';
 import '../../services/api/barber_service.dart';
+import 'widgets/profile_ios_section.dart' show IosGroupedCard;
 
 class WorkingHoursScreen extends ConsumerStatefulWidget {
   const WorkingHoursScreen({super.key});
@@ -18,6 +19,8 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   String? _errorMessage;
+
+  static const List<int> _weekDayOrder = [1, 2, 3, 4, 5, 6, 0];
 
   // Mapeo de días de la semana
   final Map<int, String> _dayNames = {
@@ -169,7 +172,7 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
           ),
         );
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -185,42 +188,79 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
     }
   }
 
+  Widget _buildDayRow(
+    int day,
+    Color textColor,
+    Color mutedColor,
+    Color accentColor,
+  ) {
+    final schedule = _schedules[day];
+    if (schedule == null) return const SizedBox.shrink();
+    return _DayScheduleCard(
+      schedule: schedule,
+      onToggle: (value) {
+        setState(() {
+          _schedules[day] = schedule.copyWith(isActive: value);
+        });
+      },
+      onStartTimeChanged: (time) {
+        setState(() {
+          _schedules[day] = schedule.copyWith(startTime: time);
+        });
+      },
+      onEndTimeChanged: (time) {
+        setState(() {
+          _schedules[day] = schedule.copyWith(endTime: time);
+        });
+      },
+      textColor: textColor,
+      mutedColor: mutedColor,
+      accentColor: accentColor,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
-    final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final mutedColor = isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
           title: Text(
-            'Horarios de Trabajo',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            'Horarios',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
           ),
-          backgroundColor: cardColor,
+          backgroundColor: groupedBg,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Iconsax.arrow_left_2),
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
+        backgroundColor: groupedBg,
         body: const Center(child: CircularProgressIndicator(color: accentColor)),
       );
     }
 
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
-          'Horarios de Trabajo',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          'Horarios',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
@@ -248,7 +288,6 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
           ),
         ],
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: _errorMessage != null && _schedules.isEmpty
           ? Center(
               child: Padding(
@@ -289,49 +328,56 @@ class _WorkingHoursScreenState extends ConsumerState<WorkingHoursScreen> {
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.only(bottom: 28),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Configura los días y horarios en los que estás disponible',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: mutedColor,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                    child: Text(
+                      'Activa cada día y define el rango en el que aceptas citas.',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: mutedColor,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Ordenar días: Lunes (1) a Domingo (0)
-                  ...([1, 2, 3, 4, 5, 6, 0].map((day) {
-                    final schedule = _schedules[day];
-                    if (schedule == null) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _DayScheduleCard(
-                        schedule: schedule,
-                        onToggle: (value) {
-                          setState(() {
-                            _schedules[day] = schedule.copyWith(isActive: value);
-                          });
-                        },
-                        onStartTimeChanged: (time) {
-                          setState(() {
-                            _schedules[day] = schedule.copyWith(startTime: time);
-                          });
-                        },
-                        onEndTimeChanged: (time) {
-                          setState(() {
-                            _schedules[day] = schedule.copyWith(endTime: time);
-                          });
-                        },
-                        textColor: textColor,
-                        mutedColor: mutedColor,
-                        cardColor: cardColor,
-                        borderColor: borderColor,
-                        accentColor: accentColor,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 8),
+                    child: Text(
+                      'SEMANA',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                        color: sectionHeaderColor,
                       ),
-                    );
-                  })),
+                    ),
+                  ),
+                  IosGroupedCard(
+                    cardColor: cardColor,
+                    child: Column(
+                      children: [
+                        for (int i = 0; i < _weekDayOrder.length; i++) ...[
+                          _buildDayRow(
+                            _weekDayOrder[i],
+                            textColor,
+                            mutedColor,
+                            accentColor,
+                          ),
+                          if (i < _weekDayOrder.length - 1)
+                            Divider(
+                              height: 1,
+                              thickness: 0.5,
+                              indent: 16,
+                              endIndent: 16,
+                              color: borderColor.withValues(alpha: 0.75),
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -382,8 +428,6 @@ class _DayScheduleCard extends StatelessWidget {
   final ValueChanged<String> onEndTimeChanged;
   final Color textColor;
   final Color mutedColor;
-  final Color cardColor;
-  final Color borderColor;
   final Color accentColor;
 
   const _DayScheduleCard({
@@ -393,20 +437,13 @@ class _DayScheduleCard extends StatelessWidget {
     required this.onEndTimeChanged,
     required this.textColor,
     required this.mutedColor,
-    required this.cardColor,
-    required this.borderColor,
     required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         children: [
           Row(
@@ -415,21 +452,22 @@ class _DayScheduleCard extends StatelessWidget {
                 child: Text(
                   schedule.day,
                   style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                     color: textColor,
                   ),
                 ),
               ),
-              Switch(
+              Switch.adaptive(
                 value: schedule.isActive,
                 onChanged: onToggle,
-                activeColor: accentColor,
+                activeThumbColor: accentColor,
+                activeTrackColor: accentColor.withValues(alpha: 0.45),
               ),
             ],
           ),
           if (schedule.isActive) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(

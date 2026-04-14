@@ -86,7 +86,7 @@ class SystemMovilColors {
   static const Color successDark = Color(0xFF059669);
   
   // Colores neutros - Suaves y limpios
-  static const Color background = Color(0xFFF0FDF4); // Verde muy claro de fondo
+  static const Color background = Color(0xFFFFFFFF); // Fondo claro (blanco)
   static const Color surface = Color(0xFFFFFFFF);
   static const Color onSurface = Color(0xFF1F2937); // Gris oscuro suave
   static const Color onSurfaceVariant = Color(0xFF6B7280); // Gris medio
@@ -221,6 +221,20 @@ final lightTheme = ThemeData().copyWith(
       textStyle: SystemMovilTypography.link,
     ),
   ),
+  snackBarTheme: SnackBarThemeData(
+    behavior: SnackBarBehavior.floating,
+    elevation: 0,
+    backgroundColor: const Color(0xFF111827),
+    contentTextStyle: SystemMovilTypography.caption.copyWith(
+      color: const Color(0xFFE5E7EB),
+      fontWeight: FontWeight.w500,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    ),
+    closeIconColor: const Color(0xFFE5E7EB),
+    showCloseIcon: true,
+  ),
 );
 
 final darkTheme = ThemeData().copyWith(
@@ -309,6 +323,20 @@ final darkTheme = ThemeData().copyWith(
       foregroundColor: SystemMovilColors.primary,
       textStyle: SystemMovilTypography.link,
     ),
+  ),
+  snackBarTheme: SnackBarThemeData(
+    behavior: SnackBarBehavior.floating,
+    elevation: 0,
+    backgroundColor: const Color(0xFF111827),
+    contentTextStyle: SystemMovilTypography.caption.copyWith(
+      color: const Color(0xFFE5E7EB),
+      fontWeight: FontWeight.w500,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    ),
+    closeIconColor: const Color(0xFFE5E7EB),
+    showCloseIcon: true,
   ),
 );
 

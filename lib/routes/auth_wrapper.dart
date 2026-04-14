@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
+import '../providers/trial_expired_provider.dart';
 import '../screens/auth/login.dart';
+import '../screens/auth/trial_expired_screen.dart';
 import '../screens/home_screen.dart';
 import '../widgets/splash_screen.dart';
 
@@ -54,8 +56,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return const SplashScreen();
         }
 
-        // Si está autenticado, ir al home
         if (authState.isAuthenticated) {
+          final trialFlag = ref.watch(trialExpiredNotifierProvider);
+          final profile = authState.userProfile;
+          final sub = authState.subscription;
+          final subExpired = sub != null && sub.isExpired && !sub.hasAccess;
+          final profileExpired = profile != null && profile.isTrialExpired;
+          if (trialFlag || subExpired || profileExpired) {
+            return const TrialExpiredScreen();
+          }
           return const HomeScreen();
         }
 

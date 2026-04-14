@@ -4,8 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../main_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_navbar.dart';
+import '../widgets/responsive_centered_body.dart';
 import '../utils/role_helper.dart';
+import '../providers/auth_provider.dart';
 import '../providers/pending_appointments_provider.dart';
+import '../providers/trial_welcome_shown_provider.dart';
+import '../services/storage/trial_welcome_storage.dart';
+import '../widgets/trial_welcome_modal.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'appointments/appointments_screen.dart';
 import 'services/services_screen.dart';
@@ -29,6 +34,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onHomeReady());
+  }
+
+  Future<void> _onHomeReady() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    try {
+      await ref.read(authNotifierProvider.notifier).initializeNotifications();
+    } catch (_) {}
+    if (!mounted) return;
+    await _maybeShowTrialWelcome();
+  }
+
+  Future<void> _maybeShowTrialWelcome() async {
+    if (!mounted) return;
+    final sub = ref.read(authNotifierProvider).subscription;
+    if (sub == null || !sub.isTrial) return;
+    final trialEndsAt = sub.trialEndsAt;
+    if (trialEndsAt == null || trialEndsAt.isBefore(DateTime.now())) return;
+    if (ref.read(trialWelcomeShownProvider)) return;
+    final alreadyShown = await TrialWelcomeStorage.getShown();
+    if (alreadyShown) return;
+    ref.read(trialWelcomeShownProvider.notifier).state = true;
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => TrialWelcomeModal(
+        subscription: sub,
+        onDismiss: () => Navigator.of(ctx).pop(),
+      ),
+    );
+    if (!mounted) return;
+    await TrialWelcomeStorage.setShown(true);
   }
 
   @override
@@ -42,6 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     super.didChangeAppLifecycleState(state);
     // Cuando la app vuelve al foreground, actualizar contador de pendientes
     if (state == AppLifecycleState.resumed) {
+      ref.read(authNotifierProvider.notifier).loadUserProfile();
       ref.read(pendingAppointmentsProvider.notifier).refresh();
     }
   }
@@ -94,7 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     final isDark = theme.brightness == Brightness.dark;
     final isEmployee = RoleHelper.isEmployee(ref);
     
-    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF0FDF4);
+    final bgColor = isDark ? const Color(0xFF0A0A0B) : Colors.white;
     
     // Inicializar índice según el rol (solo una vez)
     if (!_initialized) {
@@ -120,43 +160,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
               // Contenido
               Expanded(
-                child: Builder(
-                  builder: (context) {
-                    final isEmployee = RoleHelper.isEmployee(ref);
-                    final screens = <Widget>[
-                      // Índice 0: Dashboard (solo para Barber)
-                      isEmployee
-                          ? const SizedBox.shrink()
-                          : DashboardScreen(
-                              key: _dashboardKey,
-                              onNavigateToAppointments: () {
-                                final visibleIndex = _getVisibleIndex(1);
-                                _onTabChanged(visibleIndex);
-                              },
-                              onNavigateToServices: () {
-                                final visibleIndex = _getVisibleIndex(2);
-                                _onTabChanged(visibleIndex);
-                              },
-                              onNavigateToFinances: () {
-                                final visibleIndex = _getVisibleIndex(3);
-                                _onTabChanged(visibleIndex);
-                              },
-                            ),
-                      // Índice 1: Citas
-                      const AppointmentsScreen(),
-                      // Índice 2: Servicios (para Barber y Employee, pero Employee solo lectura)
-                      const ServicesScreen(),
-                      // Índice 3: Finanzas
-                      const FinancesScreen(),
-                      // Índice 4: Perfil
-                      const ProfileScreen(),
-                    ];
-                    
-                    return IndexedStack(
-                      index: _selectedIndex,
-                      children: screens,
-                    );
-                  },
+                child: ResponsiveCenteredBody(
+                  child: Builder(
+                    builder: (context) {
+                      final isEmployee = RoleHelper.isEmployee(ref);
+                      final screens = <Widget>[
+                        isEmployee
+                            ? const SizedBox.shrink()
+                            : DashboardScreen(
+                                key: _dashboardKey,
+                                onNavigateToAppointments: () {
+                                  final visibleIndex = _getVisibleIndex(1);
+                                  _onTabChanged(visibleIndex);
+                                },
+                                onNavigateToServices: () {
+                                  final visibleIndex = _getVisibleIndex(2);
+                                  _onTabChanged(visibleIndex);
+                                },
+                                onNavigateToFinances: () {
+                                  final visibleIndex = _getVisibleIndex(3);
+                                  _onTabChanged(visibleIndex);
+                                },
+                              ),
+                        const AppointmentsScreen(),
+                        const ServicesScreen(),
+                        const FinancesScreen(),
+                        const ProfileScreen(),
+                      ];
+
+                      return IndexedStack(
+                        index: _selectedIndex,
+                        children: screens,
+                      );
+                    },
+                  ),
                 ),
               ),
 

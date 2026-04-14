@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../models/employee.dart';
 import '../../services/api/employee_service.dart';
 import 'create_edit_employee_screen.dart';
+import 'widgets/profile_ios_section.dart' show IosGroupedCard;
 
 class EmployeesScreen extends ConsumerStatefulWidget {
   const EmployeesScreen({super.key});
@@ -72,7 +73,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
           _errorMessage = statusCode != null ? 'Error $statusCode: $message' : message;
         });
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -154,15 +155,16 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
-    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
     const accentColor = Color(0xFF10B981);
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: groupedBg,
       appBar: AppBar(
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Iconsax.arrow_left, color: textColor),
@@ -261,7 +263,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.1),
+                color: accentColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Iconsax.people, color: accentColor, size: 40),
@@ -317,158 +319,192 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
     Color borderColor,
     Color accentColor,
   ) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _employees.length,
-      itemBuilder: (context, index) {
-        final employee = _employees[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor, width: 1),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                width: 48,
-                height: 48,
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 28),
+      children: [
+        IosGroupedCard(
+          cardColor: cardColor,
+          child: Column(
+            children: [
+              for (final entry in _employees.asMap().entries) ...[
+                if (entry.key > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    indent: 16,
+                    endIndent: 16,
+                    color: borderColor.withValues(alpha: 0.75),
+                  ),
+                _EmployeeGroupedRow(
+                  employee: entry.value,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                  accentColor: accentColor,
+                  onEdit: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            CreateEditEmployeeScreen(employee: entry.value),
+                      ),
+                    );
+                    if (result == true && mounted) _loadEmployees();
+                  },
+                  onDeactivate: () => _deleteEmployee(entry.value),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmployeeGroupedRow extends StatelessWidget {
+  final EmployeeDto employee;
+  final Color textColor;
+  final Color mutedColor;
+  final Color accentColor;
+  final VoidCallback onEdit;
+  final VoidCallback onDeactivate;
+
+  const _EmployeeGroupedRow({
+    required this.employee,
+    required this.textColor,
+    required this.mutedColor,
+    required this.accentColor,
+    required this.onEdit,
+    required this.onDeactivate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      accentColor,
-                      accentColor.withOpacity(0.7),
+                    colors: [accentColor, accentColor.withValues(alpha: 0.75)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Iconsax.user, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            employee.name,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: employee.isActive
+                                ? accentColor.withValues(alpha: 0.12)
+                                : mutedColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            employee.isActive ? 'Activo' : 'Inactivo',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: employee.isActive ? accentColor : mutedColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (employee.email.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Iconsax.sms, size: 12, color: mutedColor),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              employee.email,
+                              style: GoogleFonts.inter(fontSize: 12, color: mutedColor),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Iconsax.user, color: Colors.white, size: 24),
-              ),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      employee.name,
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: textColor,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: employee.isActive
-                          ? accentColor.withOpacity(0.1)
-                          : mutedColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      employee.isActive ? 'Activo' : 'Inactivo',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: employee.isActive ? accentColor : mutedColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  if (employee.email.isNotEmpty)
-                    Row(
-                      children: [
-                        Icon(Iconsax.sms, size: 12, color: mutedColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          employee.email,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: mutedColor,
+                    if (employee.phone != null && employee.phone!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Iconsax.call, size: 12, color: mutedColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            employee.phone!,
+                            style: GoogleFonts.inter(fontSize: 12, color: mutedColor),
                           ),
-                        ),
-                      ],
-                    ),
-                  if (employee.phone != null && employee.phone!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Iconsax.call, size: 12, color: mutedColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          employee.phone!,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: mutedColor,
-                          ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
-              ),
-              trailing: PopupMenuButton(
-                icon: Icon(Iconsax.more, color: mutedColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Iconsax.more, color: mutedColor, size: 22),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (value) {
+                  if (value == 'edit') onEdit();
+                  if (value == 'deactivate') onDeactivate();
+                },
                 itemBuilder: (context) => [
                   PopupMenuItem(
+                    value: 'edit',
                     child: Row(
                       children: [
                         Icon(Iconsax.edit, size: 18, color: accentColor),
                         const SizedBox(width: 8),
-                        Text(
-                          'Editar',
-                          style: GoogleFonts.inter(),
-                        ),
+                        Text('Editar', style: GoogleFonts.inter()),
                       ],
                     ),
-                    onTap: () async {
-                      await Future.delayed(const Duration(milliseconds: 100));
-                      if (mounted) {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CreateEditEmployeeScreen(employee: employee),
-                          ),
-                        );
-                        if (result == true) {
-                          _loadEmployees();
-                        }
-                      }
-                    },
                   ),
                   PopupMenuItem(
+                    value: 'deactivate',
                     child: Row(
                       children: [
-                        Icon(Iconsax.trash, size: 18, color: const Color(0xFFEF4444)),
+                        const Icon(Iconsax.trash, size: 18, color: Color(0xFFEF4444)),
                         const SizedBox(width: 8),
-                        Text(
-                          'Desactivar',
-                          style: GoogleFonts.inter(),
-                        ),
+                        Text('Desactivar', style: GoogleFonts.inter()),
                       ],
                     ),
-                    onTap: () async {
-                      await Future.delayed(const Duration(milliseconds: 100));
-                      if (mounted) {
-                        _deleteEmployee(employee);
-                      }
-                    },
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

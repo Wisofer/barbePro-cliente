@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import '../../models/employee.dart';
 import '../../services/api/employee_service.dart';
 import '../../utils/audio_helper.dart';
+import 'widgets/profile_ios_section.dart' show IosGroupedCard;
 
 class CreateEditEmployeeScreen extends ConsumerStatefulWidget {
   final EmployeeDto? employee;
@@ -93,7 +94,7 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Trabajador "${name}" creado exitosamente'),
+              content: Text('Trabajador "$name" creado exitosamente'),
               backgroundColor: const Color(0xFF10B981),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -118,7 +119,7 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Trabajador "${name}" actualizado exitosamente'),
+              content: Text('Trabajador "$name" actualizado exitosamente'),
               backgroundColor: const Color(0xFF10B981),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -183,24 +184,28 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFD1D5DB);
-    final bgColor = isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
+    final isEditing = widget.employee != null;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: groupedBg,
       appBar: AppBar(
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Iconsax.arrow_left_2, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.employee == null ? 'Nuevo Trabajador' : 'Editar Trabajador',
+          isEditing ? 'Editar trabajador' : 'Nuevo trabajador',
           style: GoogleFonts.inter(
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: FontWeight.w600,
             color: textColor,
           ),
@@ -210,293 +215,312 @@ class _CreateEditEmployeeScreenState extends ConsumerState<CreateEditEmployeeScr
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.only(bottom: 28),
             children: [
-              // Nombre
-              Text(
-                'Nombre completo *',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _nameController,
-                style: GoogleFonts.inter(color: textColor),
-                decoration: InputDecoration(
-                  hintText: 'Ej: Carlos Rodríguez',
-                  hintStyle: GoogleFonts.inter(color: mutedColor),
-                  filled: true,
-                  fillColor: cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: accentColor, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  prefixIcon: Icon(Iconsax.user, color: mutedColor),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'El nombre es obligatorio';
-                  }
-                  if (value.trim().length < 3) {
-                    return 'El nombre debe tener al menos 3 caracteres';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Email
-              Text(
-                'Email *',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _emailController,
-                enabled: widget.employee == null, // No se puede cambiar el email al editar
-                style: GoogleFonts.inter(color: textColor),
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'ejemplo@correo.com',
-                  hintStyle: GoogleFonts.inter(color: mutedColor),
-                  filled: true,
-                  fillColor: widget.employee == null ? cardColor : cardColor.withOpacity(0.5),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: accentColor, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  prefixIcon: Icon(Iconsax.sms, color: mutedColor),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'El email es obligatorio';
-                  }
-                  if (!value.contains('@') || !value.contains('.')) {
-                    return 'Ingresa un email válido';
-                  }
-                  return null;
-                },
-              ),
-              if (widget.employee != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'El email no se puede modificar',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: mutedColor,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 20),
-
-              // Contraseña (solo al crear)
-              if (widget.employee == null) ...[
-                Text(
-                  'Contraseña *',
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Text(
+                  isEditing
+                      ? 'Actualiza los datos del trabajador.'
+                      : 'Crea una cuenta para que pueda iniciar sesión en la app.',
                   style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: textColor,
+                    fontSize: 14,
+                    color: mutedColor,
+                    height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  style: GoogleFonts.inter(color: textColor),
-                  decoration: InputDecoration(
-                    hintText: 'Mínimo 6 caracteres',
-                    hintStyle: GoogleFonts.inter(color: mutedColor),
-                    filled: true,
-                    fillColor: cardColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: borderColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: borderColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: accentColor, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    prefixIcon: Icon(Iconsax.lock, color: mutedColor),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                        color: mutedColor,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 20),
+                child: Text(
+                  'DATOS',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                    color: sectionHeaderColor,
+                  ),
+                ),
+              ),
+              IosGroupedCard(
+                cardColor: cardColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _GroupedTextFormField(
+                      controller: _nameController,
+                      label: 'Nombre completo',
+                      hint: 'Ej: Carlos Rodríguez',
+                      icon: Iconsax.user,
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      accentColor: accentColor,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'El nombre es obligatorio';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'Mínimo 3 caracteres';
+                        }
+                        return null;
                       },
                     ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'La contraseña es obligatoria';
-                    }
-                    if (value.length < 6) {
-                      return 'La contraseña debe tener al menos 6 caracteres';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // Teléfono
-              Text(
-                'Teléfono',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _phoneController,
-                style: GoogleFonts.inter(color: textColor),
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: InputDecoration(
-                  hintText: '82310100',
-                  hintStyle: GoogleFonts.inter(color: mutedColor),
-                  filled: true,
-                  fillColor: cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: accentColor, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  prefixIcon: Icon(Iconsax.call, color: mutedColor),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Estado activo (solo al editar)
-              if (widget.employee != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Estado',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: textColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _isActive
-                                  ? 'El trabajador puede acceder a la aplicación'
-                                  : 'El trabajador no puede acceder a la aplicación',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: mutedColor,
-                              ),
-                            ),
-                          ],
+                    Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 16,
+                      endIndent: 16,
+                      color: borderColor.withValues(alpha: 0.75),
+                    ),
+                    _GroupedTextFormField(
+                      controller: _emailController,
+                      label: 'Correo',
+                      hint: 'ejemplo@correo.com',
+                      icon: Iconsax.sms,
+                      textColor: isEditing ? mutedColor : textColor,
+                      mutedColor: mutedColor,
+                      accentColor: accentColor,
+                      keyboardType: TextInputType.emailAddress,
+                      readOnly: isEditing,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'El email es obligatorio';
+                        }
+                        if (!value.contains('@') || !value.contains('.')) {
+                          return 'Email no válido';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (isEditing)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Text(
+                          'El correo no se puede cambiar.',
+                          style: GoogleFonts.inter(fontSize: 12, color: mutedColor),
                         ),
                       ),
-                      Switch(
-                        value: _isActive,
-                        onChanged: (value) {
-                          setState(() {
-                            _isActive = value;
-                          });
-                        },
-                        activeColor: accentColor,
+                    if (!isEditing) ...[
+                      Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        indent: 16,
+                        endIndent: 16,
+                        color: borderColor.withValues(alpha: 0.75),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                        child: TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: GoogleFonts.inter(fontSize: 16, color: textColor),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            labelText: 'Contraseña',
+                            labelStyle: GoogleFonts.inter(color: mutedColor, fontSize: 13),
+                            hintText: 'Mínimo 6 caracteres',
+                            hintStyle: GoogleFonts.inter(
+                              color: mutedColor.withValues(alpha: 0.7),
+                            ),
+                            prefixIcon: Icon(Iconsax.lock, color: accentColor, size: 20),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
+                                color: mutedColor,
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setState(() => _obscurePassword = !_obscurePassword);
+                              },
+                            ),
+                            border: InputBorder.none,
+                            errorStyle: GoogleFonts.inter(
+                              color: const Color(0xFFEF4444),
+                              fontSize: 12,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'La contraseña es obligatoria';
+                            }
+                            if (value.length < 6) {
+                              return 'Mínimo 6 caracteres';
+                            }
+                            return null;
+                          },
+                        ),
                       ),
                     ],
+                    Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      indent: 16,
+                      endIndent: 16,
+                      color: borderColor.withValues(alpha: 0.75),
+                    ),
+                    _GroupedTextFormField(
+                      controller: _phoneController,
+                      label: 'Teléfono (opcional)',
+                      hint: '82310100',
+                      icon: Iconsax.call,
+                      textColor: textColor,
+                      mutedColor: mutedColor,
+                      accentColor: accentColor,
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                  ],
+                ),
+              ),
+              if (isEditing) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 16, bottom: 6, top: 22),
+                  child: Text(
+                    'ESTADO',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: sectionHeaderColor,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                IosGroupedCard(
+                  cardColor: cardColor,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cuenta activa',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _isActive
+                                    ? 'Puede acceder a la aplicación.'
+                                    : 'No podrá iniciar sesión.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: mutedColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: _isActive,
+                          activeThumbColor: accentColor,
+                          activeTrackColor: accentColor.withValues(alpha: 0.45),
+                          onChanged: (value) {
+                            setState(() => _isActive = value);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
-
-              // Botón guardar
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveEmployee,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveEmployee,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          isEditing ? 'Guardar' : 'Crear trabajador',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        widget.employee == null ? 'Crear Trabajador' : 'Guardar Cambios',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GroupedTextFormField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final Color textColor;
+  final Color mutedColor;
+  final Color accentColor;
+  final TextInputType? keyboardType;
+  final bool readOnly;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? Function(String?)? validator;
+
+  const _GroupedTextFormField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.textColor,
+    required this.mutedColor,
+    required this.accentColor,
+    this.keyboardType,
+    this.readOnly = false,
+    this.inputFormatters,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: TextFormField(
+        controller: controller,
+        readOnly: readOnly,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        style: GoogleFonts.inter(fontSize: 16, color: textColor),
+        decoration: InputDecoration(
+          isDense: true,
+          labelText: label,
+          labelStyle: GoogleFonts.inter(color: mutedColor, fontSize: 13),
+          hintText: hint,
+          hintStyle: GoogleFonts.inter(color: mutedColor.withValues(alpha: 0.7)),
+          prefixIcon: Icon(icon, color: accentColor, size: 20),
+          border: InputBorder.none,
+          errorStyle: GoogleFonts.inter(
+            color: const Color(0xFFEF4444),
+            fontSize: 12,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        validator: validator,
       ),
     );
   }

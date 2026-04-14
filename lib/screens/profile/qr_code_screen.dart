@@ -1,18 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import '../../models/barber.dart';
 import '../../models/auth.dart';
 import '../../services/api/barber_service.dart';
+import 'widgets/profile_ios_section.dart';
 
 class QrCodeScreen extends ConsumerStatefulWidget {
   final BarberDto profile;
@@ -118,17 +117,22 @@ class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF1F2937);
     final mutedColor = isDark ? const Color(0xFF71717A) : const Color(0xFF6B7280);
-    final cardColor = isDark ? const Color(0xFF18181B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE5E7EB);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF38383A) : const Color(0xFFC6C6C8);
+    final groupedBg = isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
+    final sectionHeaderColor =
+        isDark ? const Color(0xFF8E8E93) : const Color(0xFF6D6D72);
     const accentColor = Color(0xFF10B981);
 
     return Scaffold(
+      backgroundColor: groupedBg,
       appBar: AppBar(
         title: Text(
           'Código QR',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        backgroundColor: cardColor,
+        backgroundColor: groupedBg,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2),
@@ -143,7 +147,6 @@ class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
             ),
         ],
       ),
-      backgroundColor: isDark ? const Color(0xFF0A0A0B) : const Color(0xFFF9FAFB),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: accentColor))
           : _qrData == null
@@ -177,111 +180,120 @@ class _QrCodeScreenState extends ConsumerState<QrCodeScreen> {
                   ),
                 )
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.only(bottom: 28),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Información
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Comparte este código QR',
+                      ProfileIosSection(
+                        isFirst: true,
+                        title: 'Reserva',
+                        headerColor: sectionHeaderColor,
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        tiles: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'Los clientes escanean el código para abrir tu enlace de reserva.',
                               style: GoogleFonts.inter(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Tus clientes pueden escanear este código para agendar citas directamente',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
+                                fontSize: 14,
                                 color: mutedColor,
+                                height: 1.45,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // QR Code
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: accentColor.withAlpha(50),
-                            width: 2,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentColor.withAlpha(20),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: QrImageView(
-                          data: _qrData!.url,
-                          version: QrVersions.auto,
-                          size: 280,
-                          backgroundColor: Colors.white,
-                          foregroundColor: accentColor,
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 24),
-
-                      // Información del negocio
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              widget.profile.businessName ?? widget.profile.name,
-                              style: GoogleFonts.inter(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                              child: QrImageView(
+                                data: _qrData!.url,
+                                version: QrVersions.auto,
+                                size: 240,
+                                backgroundColor: Colors.white,
+                                eyeStyle: QrEyeStyle(
+                                  eyeShape: QrEyeShape.square,
+                                  color: accentColor,
+                                ),
+                                dataModuleStyle: QrDataModuleStyle(
+                                  dataModuleShape: QrDataModuleShape.square,
+                                  color: accentColor,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _qrData!.url,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: mutedColor,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Botón de compartir
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _shareQr,
-                          icon: const Icon(Iconsax.send_2, size: 18),
-                          label: const Text('Compartir'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accentColor,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                      const SizedBox(height: 16),
+                      ProfileIosSection(
+                        title: 'Enlace',
+                        headerColor: sectionHeaderColor,
+                        cardColor: cardColor,
+                        borderColor: borderColor,
+                        tiles: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                Text(
+                                  widget.profile.businessName ?? widget.profile.name,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                SelectableText(
+                                  _qrData!.url,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: mutedColor,
+                                    height: 1.35,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _shareQr,
+                            icon: const Icon(Iconsax.send_2, size: 18),
+                            label: Text(
+                              'Compartir',
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
                       ),

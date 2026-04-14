@@ -9,6 +9,7 @@ import 'main_theme.dart';
 import 'providers/settings/settings_notifier.dart';
 import 'routes/auth_wrapper.dart';
 import 'screens/auth/login.dart';
+import 'screens/auth/privacy_security_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/app_localizations.dart';
@@ -63,6 +64,8 @@ class SystemMovilApp extends StatelessWidget {
           routes: {
             AuthWrapper.routeName: (context) => const AuthWrapper(),
             LoginScreen.routeName: (context) => const LoginScreen(),
+            PrivacySecurityScreen.routeName: (context) =>
+                const PrivacySecurityScreen(),
             RegisterScreen.routeName: (context) => const RegisterScreen(),
             '/home': (context) => const HomeScreen(),
           },

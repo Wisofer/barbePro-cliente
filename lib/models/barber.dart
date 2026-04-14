@@ -10,6 +10,10 @@ class BarberDto {
   final String qrUrl;
   final DateTime createdAt;
   final String? email;
+  final String? profileImageUrl;
+  final DateTime? trialEndsAt;
+  final bool isPro;
+  final DateTime? proActivatedAt;
 
   BarberDto({
     required this.id,
@@ -21,6 +25,10 @@ class BarberDto {
     required this.qrUrl,
     required this.createdAt,
     this.email,
+    this.profileImageUrl,
+    this.trialEndsAt,
+    this.isPro = false,
+    this.proActivatedAt,
   });
 
   factory BarberDto.fromJson(Map<String, dynamic> json) => BarberDto(
@@ -29,10 +37,20 @@ class BarberDto {
         businessName: json['businessName'],
         phone: json['phone'],
         slug: json['slug'],
-        isActive: json['isActive'],
-        qrUrl: json['qrUrl'],
-        createdAt: DateTime.parse(json['createdAt']),
+        isActive: json['isActive'] ?? true,
+        qrUrl: json['qrUrl'] ?? '',
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'].toString())
+            : DateTime.now(),
         email: json['email'],
+        profileImageUrl: json['profileImageUrl']?.toString(),
+        trialEndsAt: json['trialEndsAt'] != null
+            ? DateTime.tryParse(json['trialEndsAt'].toString())
+            : null,
+        isPro: json['isPro'] == true,
+        proActivatedAt: json['proActivatedAt'] != null
+            ? DateTime.tryParse(json['proActivatedAt'].toString())
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -45,6 +63,41 @@ class BarberDto {
         'qrUrl': qrUrl,
         'createdAt': createdAt.toIso8601String(),
         'email': email,
+        'profileImageUrl': profileImageUrl,
+        'trialEndsAt': trialEndsAt?.toIso8601String(),
+        'isPro': isPro,
+        'proActivatedAt': proActivatedAt?.toIso8601String(),
+      };
+}
+
+/// Enlace de red social del negocio (Facebook, Instagram, etc.)
+class SocialLinkDto {
+  final int id;
+  final String platform;
+  final String url;
+  final int sortOrder;
+
+  SocialLinkDto({
+    required this.id,
+    required this.platform,
+    required this.url,
+    required this.sortOrder,
+  });
+
+  factory SocialLinkDto.fromJson(Map<String, dynamic> json) => SocialLinkDto(
+        id: (json['id'] is int) ? json['id'] as int : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+        platform: json['platform']?.toString() ?? '',
+        url: json['url']?.toString() ?? '',
+        sortOrder: (json['sortOrder'] is int)
+            ? json['sortOrder'] as int
+            : int.tryParse(json['sortOrder']?.toString() ?? '0') ?? 0,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'platform': platform,
+        'url': url,
+        'sortOrder': sortOrder,
       };
 }
 
